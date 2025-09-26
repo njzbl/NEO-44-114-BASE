@@ -289,13 +289,12 @@ void InitNewKeyVar(uint8_t keySta)
 	StopExShades();
 	mOutputSta.motorS1 = MACHINE_OK;
 	// mOutputSta.fanS2 = MACHINE_OK;		//关风机时不要清除风机故障
-    HAL_StatusTypeDef ret;
+
     stATH20DATA ath20data;
-    ret = AHT20GetStatusTempRH(&ath20data);
-    if(ret != HAL_ERROR) {
-        printf("AHT20GetStatusTempRH = %d\r\n",ret);
-        AHT20TransCmd();
-    }
+    uint8_t crc = AHT20_GetTransData(&ath20data);
+    printf("AHT20_GetTransData :%x_%d_%d ::crc = %d\r\n",ath20data.status,ath20data.RH,ath20data.temperature,crc);
+    AHT20_SeqTrans();
+
     // for(int i = 0; i < sizeof(mMotorCurTemp) / sizeof(uint16_t); i++)
     //     mMotorCurTemp[i] = 0;
     mMotorCurCount = 0;
@@ -755,6 +754,11 @@ int MainControl(void)
             }
         }
 //<<<<<<<<485 反馈状态<<<<<<<<<<<<<<
+
+    stATH20DATA ath20data;
+    uint8_t crc = AHT20_GetTransData(&ath20data);
+    AHT20_SeqTrans();
+
 		if(mDoorRunNumSta >= 0) {
 			mDoorRunNumSta = 2;	//mDoorRunNumSta = 0; // 用于自我循环测试时使用的，赋值0 可以在及时大于5秒后也能一直使用虚拟按键。
             // printf("mDoorRunNumSta = 2;\r\n");
@@ -916,8 +920,8 @@ void StopBDCShares(uint8_t chn)
 {
 	// setBDCMotorStop(chn);
 }
-
-#define DEV_ADDR_AHT20          0x38
+/*
+#define DEV_ADDR_AHT20          0x70
 #define REG_ADDR_TRANS          0xAC
 
 #define AHT20_TIMEOUT_MS           1       //1ms
@@ -988,7 +992,7 @@ HAL_StatusTypeDef  AHT20GetStatusTempRH(stATH20DATA *ath20data)
 // 将测量读取到的Status、SRH[19:0]、ST[19:0]进行CRC8检验，CRC初始值为0xFF，CRC8校验多项
 // 式为：CRC[7:0]=1+x4+x5+x8
 // , CRC计算代码如下：
-//**********************************************************//
+////
 //CRC校验类型：CRC8
 //多项式：X8+X5+X4+1
 //Poly:0011 0001 0x31
@@ -1008,6 +1012,7 @@ unsigned char Calc_CRC8(unsigned char *message,unsigned char Num)
     }
     return crc;
 }
+*/
 //**********************************************************//
 
 /*****************************************************************************************************************************

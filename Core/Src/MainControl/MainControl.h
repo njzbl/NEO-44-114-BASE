@@ -183,9 +183,9 @@ typedef struct FAN_STA
 }stFAN_STA;
 
 typedef struct ATH20DATA{
-    uint8_t status;
     int32_t RH;
     int32_t temperature;
+    uint8_t status;
 }stATH20DATA;
 
 /*****************************************************************************************************************************
@@ -227,9 +227,9 @@ void getBDCMotorCur(void);
 void setBLDCMotor(uint8_t chn, uint8_t sta);
 extern void StartFan(void);
 extern void StopFan(void);
-extern HAL_StatusTypeDef  AHT20GetStatusTempRH(stATH20DATA *ath20data);
-extern HAL_StatusTypeDef  AHT20TransCmd(void);
-extern unsigned char Calc_CRC8(unsigned char *message,unsigned char Num);
+// extern HAL_StatusTypeDef  AHT20GetStatusTempRH(stATH20DATA *ath20data);
+// extern HAL_StatusTypeDef  AHT20TransCmd(void);
+// extern unsigned char Calc_CRC8(unsigned char *message,unsigned char Num);
 #endif
 /*****************************************************************************************************************************
  * END OF FILE: StepMotor.h
