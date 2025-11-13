@@ -87,7 +87,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
   /* NOTE: This function should not be modified, when the callback is needed,
            the HAL_GPIO_EXTI_Falling_Callback could be implemented in the user file
    */
-#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == TZC36_5840_3650)
+#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == TZC36_5840_3650 || MOTOR_MODEL == DLK_YLSZ23)
   	if(GPIO_Pin == ON_STATE1_Pin) {
         if(mCMD510BPowerFlagA == 1) {       //增加了下拉电阻，这条限制语句就可以不用增加了，如果没有下拉电阻，那么在电机掉电后因为内部电容的存在，FG信号会缓慢的从高电平掉落到低电平，就是触发成千上万个FG脉冲信号。增加了下拉电阻可以非常有效的解决这个问题。
             return ;
@@ -102,6 +102,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
             mCount.motorCMD510BRunStaA++;
         }
 #endif
+        mDoorSta.doorPositionFinalA++;
 		mOSTM16_SysTick10us_CMD510B_M_A = 0;	//clear Motor A pluse count, if the number over 500ms is NG.
 		if(mKeySta.nowKeySta == OPEN_DOOR) {
 			mDoorSta.nowDoorPositionCMD510BMA++;
@@ -110,7 +111,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
                 if(mDebugFlagPowerDownCMD510BA[1] == 0) {
 #if (MOTOR_MODEL == CHENXIN_5840_3650)
 				    setBDCMotorStop(0);      //   ZBL  20250418
-                     printf("PowerDownShadesMotorAAA() mCount.motorCMD510BRunStaA = %d mOSTM16_SysTick10us_CMD510B_M_A = %d mDoorSta.nowDoorPositionCMD510BMA = %d \r\n",mCount.motorCMD510BRunStaA,mOSTM16_SysTick10us_CMD510B_M_A,mDoorSta.nowDoorPositionCMD510BMA);
+                    //  printf("PowerDownShadesMotorAAA() mCount.motosrCMD510BRunStaA = %d mOSTM16_SysTick10us_CMD510B_M_A = %d mDoorSta.nowDoorPositionCMD510BMA = %d \r\n",mCount.motorCMD510BRunStaA,mOSTM16_SysTick10us_CMD510B_M_A,mDoorSta.nowDoorPositionCMD510BMA);
                 
 #endif
                     mDebugFlagPowerDownCMD510BA[1] = 1;
@@ -121,7 +122,6 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 			mDoorSta.nowDoorPositionCMD510BMA--;
 			if(mDoorSta.nowDoorPositionCMD510BMA <= 0) {
 				mDoorSta.nowDoorPositionCMD510BMA = 0;
-                // setBDCMotorStop(0);   //ZBL 20250826   低温实验用的临时增加代码
 			}
 		}
 	}
@@ -138,6 +138,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
             mCount.motorCMD510BRunStaB++;
         }
 #endif
+        mDoorSta.doorPositionFinalB++;
 		mOSTM16_SysTick10us_CMD510B_M_B = 0;	//clear Motor B pluse count, if the number over 500ms is NG.
 		if(mKeySta.nowKeySta == OPEN_DOOR) {
 			mDoorSta.nowDoorPositionCMD510BMB++;
@@ -155,7 +156,6 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 			mDoorSta.nowDoorPositionCMD510BMB--;
 			if(mDoorSta.nowDoorPositionCMD510BMB <= 0) {
 				mDoorSta.nowDoorPositionCMD510BMB = 0;
-                // setBDCMotorStop(1);   //ZBL 20250826   低温实验用的临时增加代码
 			}
 				
 		}
@@ -224,6 +224,8 @@ void InitNewKeyVar(uint8_t keySta)
 	mCount.motorCMD510BRunStaA = 0;
 	mCount.motorCMD510BRunStaB = 0;
 	mCount.motorRunPluseIndex = 0;
+    mDoorSta.doorPositionFinalA = 0;
+    mDoorSta.doorPositionFinalB = 0;
 	for(int i = 0;i < MOTOR_RUN_PLUSE_INDEX_MAX;i++) {
 		mCount.motorRunPluseA[i] = 0;
 		mCount.motorRunPluseB[i] = 0;
@@ -290,10 +292,10 @@ void InitNewKeyVar(uint8_t keySta)
 	mOutputSta.motorS1 = MACHINE_OK;
 	// mOutputSta.fanS2 = MACHINE_OK;		//关风机时不要清除风机故障
 
-    stATH20DATA ath20data;
-    uint8_t crc = AHT20_GetTransData(&ath20data);
-    printf("AHT20_GetTransData :%x_%d_%d ::crc = %d\r\n",ath20data.status,ath20data.RH,ath20data.temperature,crc);
-    AHT20_SeqTrans();
+    // stATH20DATA ath20data;
+    // uint8_t crc = AHT20_GetTransData(&ath20data);
+    // printf("AHT20_GetTransData :%x_%d_%d ::crc = %d\r\n",ath20data.status,ath20data.RH,ath20data.temperature,crc);
+    // AHT20_SeqTrans();
 
     // for(int i = 0; i < sizeof(mMotorCurTemp) / sizeof(uint16_t); i++)
     //     mMotorCurTemp[i] = 0;
@@ -352,7 +354,7 @@ int MainControl(void)
 			mInputSta.startQG = GPIO_PIN_SET;
 		}
 	}
-	// printf("mOSTM16_SysTick10us_K:%d,%d;%d\r\n",mOSTM16_SysTick10us_K,mOSTM16_SysTick10us_M,mInputSta.startQG);
+	// printf("mOSTM16_SysTick10us_K:%d;%d\r\n",mOSTM16_SysTick10us_K,mInputSta.startQG);
 	
 	// if (mDoorRunNumSta == 0) {
 	// 	delayKey = DELAY_150MS;
@@ -427,10 +429,11 @@ int MainControl(void)
 
 
 
-//ZBL 20250826 低温测试临时屏蔽
-    // if(mPowerAdcB.NowVal < mPowerAdcB.ThresholdMin && mCount.initBackDoor > DELAY_7S) {      //上电7秒以后  ,断电自动关闭百叶。 //ZBL 20250826 低温测试临时屏蔽
-    //     mKeyValQG = KEY_VAL_CLOSE_WIN;
-    // }
+#if (MACHIME_POWER_LOSS_PROTECTION == PROTECTION_ENABLED)
+    if(mPowerAdcB.NowVal < mPowerAdcB.ThresholdMin && mCount.initBackDoor > DELAY_7S) {      //上电7秒以后  ,断电自动关闭百叶。
+        mKeyValQG = KEY_VAL_CLOSE_WIN;
+    }
+#endif
 	if(mKeyValQG == KEY_VAL_OPEN_WIN) {//if(mInputSta.start == KEY_VAL_OPEN_WIN) {
         // if(mKeyValQG == KEY_VAL_OPEN_WIN)       //手工启动模式。
         //     mManualFlag = TRUE;
@@ -573,7 +576,7 @@ int MainControl(void)
 			uint8_t motorAllSta = 0;
 			for(i = 0; i < MOTOR_BDC_NUMBER_MAX; i++) {
 				if(mMotorBDC.motorBDCValid[i] == VALID) {
-					if(mDoorSta.motorCurNum[i] < 100) {
+					if(mDoorSta.motorCurNum[i] < 100) {		//正常情况下百叶跑完整个行程至少有2700个
 						motorAllSta |= 1;
 					}
 				}
@@ -584,17 +587,23 @@ int MainControl(void)
 			else {
 				mOutputSta.motorS1 = MACHINE_OK;
 			}
-            printf("mDoorSta.motorCurNum = %d,%d,%d motorCurTemp = %d,%d,%d\r\n",mDoorSta.motorCurNum[0],mDoorSta.motorCurNum[1],mDoorSta.motorCurNum[2],motorCurTemp[0],motorCurTemp[1],motorCurTemp[2]);
+#if (MACHIME_DETECT_FOREIGN == DETECT_FOREIGN_ENABLED)
+            if((mDoorSta.doorPositionFinalA < (2080 - 200)) || (mDoorSta.doorPositionFinalB < (2080 - 200))) {	//测试的首台样机装配百叶后，总行程为2080左右个脉冲。实际代码这里一定是要修正的
+                mOutputSta.motorS1 = MACHINE_ERR;
+            }
+            // printf("mDoorSta.motorCurNum = %d,%d,%d motorCurTemp = %d,%d,%d\r\n",mDoorSta.motorCurNum[0],mDoorSta.motorCurNum[1],mDoorSta.motorCurNum[2],motorCurTemp[0],motorCurTemp[1],motorCurTemp[2]);
+#endif
+
 #endif
 		}
 		// printf("mCount.motorBDCRunSta[0-2] = %d_%d_%d\r\n",mCount.motorBDCRunSta[0],mCount.motorBDCRunSta[1],mCount.motorBDCRunSta[2]);
 		// printf("setOUT_C0(%d);  = %d, A,B = %d, %d\r\n",mOutputSta.motorS1, mCount.motorRunSta,mCount.motorRunStaA, mCount.motorRunStaB);
 		
 		if(mKeySta.nowKeySta == CLOSE_DOOR) { //应该在关百叶的角度信号小于200时清零。
-			printf("Close mDoorSta.motorFG A,B,C = %d, %d, %d ; DCMA,B = %d, %d, %d ; LAST,B = %d, %d, %d\r\n",mDoorSta.nowDoorPositionCMD510BMA,mDoorSta.nowDoorPositionCMD510BMB, mDoorSta.motorFG[2],mDoorSta.nowDoorPositionDCM[0],mDoorSta.nowDoorPositionDCM[1],mDoorSta.nowDoorPositionDCM[2],mDoorSta.lastPositionCLoseDoor[0],mDoorSta.lastPositionCLoseDoor[1],mDoorSta.lastPositionCLoseDoor[2]);
+			printf("Close mDoorSta.motorFG A,B,C = %d, %d, %d ; DCMA,B = %d, %d, %d ; LAST,B = %d, %d, %d\r\n",mDoorSta.nowDoorPositionCMD510BMA,mDoorSta.nowDoorPositionCMD510BMB, mDoorSta.doorPositionFinalA,mDoorSta.nowDoorPositionDCM[0],mDoorSta.nowDoorPositionDCM[1],mDoorSta.nowDoorPositionDCM[2],mDoorSta.lastPositionCLoseDoor[0],mDoorSta.lastPositionCLoseDoor[1],mDoorSta.lastPositionCLoseDoor[2]);
 		}
 		else if(mKeySta.nowKeySta == OPEN_DOOR){
-			printf("Open  mDoorSta.motorFG A,B,C = %d, %d, %d ; DCMA,B = %d, %d, %d ; LAST,B = %d, %d, %d\r\n",mDoorSta.nowDoorPositionCMD510BMA,mDoorSta.nowDoorPositionCMD510BMB, mDoorSta.motorFG[2],mDoorSta.nowDoorPositionDCM[0],mDoorSta.nowDoorPositionDCM[1],mDoorSta.nowDoorPositionDCM[2],mDoorSta.lastPositionCLoseDoor[0],mDoorSta.lastPositionCLoseDoor[1],mDoorSta.lastPositionCLoseDoor[2]);
+			printf("Open  mDoorSta.motorFG A,B,C = %d, %d, %d ; DCMA,B = %d, %d, %d ; LAST,B = %d, %d, %d\r\n",mDoorSta.nowDoorPositionCMD510BMA,mDoorSta.nowDoorPositionCMD510BMB, mDoorSta.doorPositionFinalA,mDoorSta.nowDoorPositionDCM[0],mDoorSta.nowDoorPositionDCM[1],mDoorSta.nowDoorPositionDCM[2],mDoorSta.lastPositionCLoseDoor[0],mDoorSta.lastPositionCLoseDoor[1],mDoorSta.lastPositionCLoseDoor[2]);
 		}
 		if (mKeySta.nowKeySta == CLOSE_DOOR) { //应该在关百叶的角度信号小于200时清零。
 			for(i = 0; i < MOTOR_BDC_NUMBER_MAX; i++) {
@@ -625,7 +634,7 @@ int MainControl(void)
 	if(mCount.fan >= DELAY_6S) {	//风机独立开判断是为了风机在一直旋转，不停的检测风机的状态，当第一个5秒来到后，每1秒检测一次状态。
 		// printf("mAutoVal485 = %d getCtrlStaModbus() = %d mTestVal485 = %d \r\n",mAutoVal485, getCtrlStaModbus(),mTestVal485);
 
-        mCount.fanRunSta = mFanSta.fanFg;  //直流风扇，通过FG信号判断是否在旋转。
+        // mCount.fanRunSta = mFanSta.fanFg;  //直流风扇，通过FG信号判断是否在旋转。目前还没实现
         if(mKeySta.nowKeySta == OPEN_DOOR) {	//只有开风机的时候才会更新风机状态  ， 进风百叶是没有风机的，为了使生产方便，代码都保持一致，只是进风百叶不连接S2端子。
 			if(mCount.fanRunSta >= FAN_EFFICACY_NUM_MAX) {
 				mOutputSta.fanS2 = MACHINE_OK;
@@ -633,7 +642,7 @@ int MainControl(void)
 			else {
 				mOutputSta.fanS2 = MACHINE_ERR;
 			}
-			// printf("mOutputSta.fanS2 = %d; mCount.fanRunSta = %d \r\n",mOutputSta.fanS2,mCount.fanRunSta);
+			printf("mOutputSta.fanS2 = %d; mCount.fanRunSta = %d \r\n",mOutputSta.fanS2,mCount.fanRunSta);
 		}
 #if (STOP_FAN_CUR_CHECK == 1)      
         else {
@@ -755,9 +764,10 @@ int MainControl(void)
         }
 //<<<<<<<<485 反馈状态<<<<<<<<<<<<<<
 
-    stATH20DATA ath20data;
-    uint8_t crc = AHT20_GetTransData(&ath20data);
-    AHT20_SeqTrans();
+    // stATH20DATA ath20data;
+    // uint8_t crc = AHT20_GetTransData(&ath20data);
+    // AHT20_SeqTrans();
+	// printf("mPowerAdcB.NowVal = %d\r\n", mPowerAdcB.NowVal);
 
 		if(mDoorRunNumSta >= 0) {
 			mDoorRunNumSta = 2;	//mDoorRunNumSta = 0; // 用于自我循环测试时使用的，赋值0 可以在及时大于5秒后也能一直使用虚拟按键。
@@ -782,7 +792,7 @@ void OpenExShades(void)
 		setBDCMotorForward(MOTOR1_LOGIC_CHN);
 		setBDCMotorForward(MOTOR2_LOGIC_CHN);
 #endif
-#if (MOTOR_MODEL == CHENXIN_5840_3650)
+#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == DLK_YLSZ23)
         setBLDCMotor(MOTOR1_LOGIC_CHN, 1);
         setBLDCMotor(MOTOR2_LOGIC_CHN, 1);
 		setBDCMotorForward(MOTOR1_LOGIC_CHN);
@@ -812,7 +822,7 @@ void CloseExShades(void)
 		setBDCMotorBack(MOTOR1_LOGIC_CHN);
 		setBDCMotorBack(MOTOR2_LOGIC_CHN);
 #endif
-#if (MOTOR_MODEL == CHENXIN_5840_3650)
+#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == DLK_YLSZ23)
         setBLDCMotor(MOTOR1_LOGIC_CHN, 0);
         setBLDCMotor(MOTOR2_LOGIC_CHN, 0);
 		setBDCMotorForward(MOTOR1_LOGIC_CHN);
@@ -834,7 +844,7 @@ void StopExShades(void)
 {
 	setBDCMotorStop(MOTOR1_LOGIC_CHN);
 	setBDCMotorStop(MOTOR2_LOGIC_CHN);
-#if (MOTOR_MODEL == CHENXIN_5840_3650)
+#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == DLK_YLSZ23)
         setBLDCMotor(MOTOR1_LOGIC_CHN, 0);
         setBLDCMotor(MOTOR2_LOGIC_CHN, 0);
 #endif
@@ -848,7 +858,7 @@ void StopExShades(void)
 //sta : 0：motor reverse Rotation    1: motor forward rotate
 void setBLDCMotor(uint8_t chn, uint8_t sta)
 {
-#if (MOTOR_MODEL == CHENXIN_5840_3650)
+#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == DLK_YLSZ23)
     setDirPwm(chn, sta);
 #endif
 }

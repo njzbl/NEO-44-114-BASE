@@ -313,13 +313,14 @@ void adcSampling(void)
         mMotorAdc[0].SamplingFalg = 0;   //清除采集完成标识
         mMotorAdc[0].CurFlag = 1;
     }
+#if (MACHIME_POWER_LOSS_PROTECTION == PROTECTION_ENABLED)
     if(mPowerAdcB.SamplingFalg == 1) {
         int32_t tempSum = 0;
         for(int i = 0;i <ADC_DIVISION_VAL;i++) {
             curVal[i] = mPowerAdcB.DivVal[i] * 3300 >> 12;
             tempSum += curVal[i];
         }
-        mPowerAdcB.ThresholdMin = 1800;     //1800mV
+        mPowerAdcB.ThresholdMin = 1100;     //1800mV 对应 R1 = 20K ; 1100mV 对应 R1 = 47K (DC24V 正常供电时 1220mV ； DC20V 供电时 1060mV ； DC18V 供电时 980mV )
         mPowerAdcB.NowVal = (tempSum / ADC_DIVISION_VAL);
         // mMachineModbusSta.Ntctemperature = mNtc10KAdc.NowVal + 273;
         // printf("mPowerAdcB.NowVal = %d\r\n", mPowerAdcB.NowVal);
@@ -327,6 +328,7 @@ void adcSampling(void)
         mPowerAdcB.SamplingFalg = 0;   //清除采集完成标识
         mPowerAdcB.CurFlag = 1;
     }
+#endif
     if(mNtc10KAdc.SamplingFalg == 1) {
         int32_t tempSum = 0;
         int32_t tempval = 0;
@@ -379,7 +381,7 @@ void adcCallback(void)
         mMotorAdc[0].SamplingFalg = 1;
     }
     
-    if(mMotorAdc[0].DivVal[mMotorAdc[0].DivNum] >= 2625) {  //5A  ，实测效果很好，MOS管不会坏 ， 2025-07-16
+    if(mMotorAdc[0].DivVal[mMotorAdc[0].DivNum] >= MAX_CURRENT_MOTOR) {  //5A  ，实测效果很好，MOS管不会坏 ， 2025-07-16
         mPtMotorCurrentCount[0]++;
         if(mPtMotorCurrentCount[0] > 10) {              //参数为10时，短路时峰值电流为16A，持续时间约100us, 取值10的原因：辰鑫400350DW电机，启动瞬间会有4个周期电流值超过2625，
             HAL_GPIO_WritePin(MOTOR_PWR_CTRL1_GPIO_Port, MOTOR_PWR_CTRL1_Pin, GPIO_PIN_RESET);
@@ -400,7 +402,7 @@ void adcCallback(void)
         //     }
         // }        
     }
-    if(mMotorAdc[1].DivVal[mMotorAdc[0].DivNum] >= 2625) {  //5A
+    if(mMotorAdc[1].DivVal[mMotorAdc[0].DivNum] >= MAX_CURRENT_MOTOR) {
         mPtMotorCurrentCount[1]++;
         if(mPtMotorCurrentCount[1] > 10) {
             HAL_GPIO_WritePin(MOTOR_PWR_CTRL2_GPIO_Port, MOTOR_PWR_CTRL2_Pin, GPIO_PIN_RESET);
@@ -421,14 +423,14 @@ void adcCallback(void)
         //     }
         // }
     }
-    // mPowerAdcB.DivVal[mNtc10KAdc.DivNum] = aADCxConvertedData[ADC_POWER_VALID_CH];
-    // mNtc10KAdc.DivVal[mNtc10KAdc.DivNum] = aADCxConvertedData[ADC_BOARD_TEMP_CH];
-    // mNtc10KAdc.DivNum++;
-    // if(mNtc10KAdc.DivNum == ADC_DIVISION_VAL) {
-    //     mNtc10KAdc.DivNum = 0;
-    //     mNtc10KAdc.SamplingFalg = 1;
-    //     mPowerAdcB.SamplingFalg = 1;
-    // }
+    mPowerAdcB.DivVal[mNtc10KAdc.DivNum] = aADCxConvertedData[ADC_POWER_VALID_CH];
+    mNtc10KAdc.DivVal[mNtc10KAdc.DivNum] = aADCxConvertedData[ADC_BOARD_TEMP_CH];
+    mNtc10KAdc.DivNum++;
+    if(mNtc10KAdc.DivNum == ADC_DIVISION_VAL) {
+        mNtc10KAdc.DivNum = 0;
+        mNtc10KAdc.SamplingFalg = 1;
+        mPowerAdcB.SamplingFalg = 1;
+    }
 }
 /*****************************************************************************************************************************
  * END OF FILE: StepMotor.c

@@ -7,6 +7,14 @@ extern "C" {
 
 #include "main.h"
 
+#define PROTECTION_DISABLED                 0
+#define PROTECTION_ENABLED                  1
+#define MACHIME_POWER_LOSS_PROTECTION       PROTECTION_DISABLED
+
+#define DETECT_FOREIGN_DISABLED             0
+#define DETECT_FOREIGN_ENABLED              1
+#define MACHIME_DETECT_FOREIGN              DETECT_FOREIGN_ENABLED
+
 //风机功率设定，只能选择一种风机
 #define FAN_MODEL_AC_75W                  1
 #define FAN_MODEL_DC_100W                 2
@@ -14,8 +22,17 @@ extern "C" {
 #define DLK_TG_60W                      0       //迪洛克推杆电机
 #define CHENXIN_5840_3650               1       //辰鑫蜗涡轮杆电机 400350DW
 #define TZC36_5840_3650                 2       //万融蜗涡轮杆电机
-#define MOTOR_MODEL                     CHENXIN_5840_3650
+#define DLK_YLSZ23                      3       //迪洛克fg推杆电机
+#define MOTOR_MODEL                     DLK_YLSZ23
 
+#if (MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_TG_60W || MOTOR_MODEL == TZC36_5840_3650)
+#define MAX_CURRENT_MOTOR               5000        //9A     这里的阈值5000为暂定值，需要测试
+
+#endif
+#if (MOTOR_MODEL == CHENXIN_5840_3650)
+#define MAX_CURRENT_MOTOR               2625        //5A
+
+#endif
 // 项目宏定义配置如下
 #define MACHINE_NO_MODE                 0   //常开触点机型
 #define MACHINE_YGDY_MODE               1   //阳光电源机型
@@ -91,7 +108,7 @@ extern "C" {
 
 // #define FARTHEST_POSITION_DC_B_MOTOR    4000//2900 (实际测试发现同一个百叶，一个完整行程远远大于2600，也比2900大)    //2600(max) * 1.115  	//45 ° , pluse is 2600. 2600 * 1.115 = 2900
 // #define FARTHEST_POSITION_DC_B_MOTOR    3500//2900 (实际测试发现同一个百叶，一个完整行程远远大于2600，也比2900大)    //2600(max) * 1.115  	//45 ° , pluse is 2600. 2600 * 1.115 = 2900
-#define FARTHEST_POSITION_DC_B_MOTOR    700 //800 辰鑫400350DW电机正式程序的参数800        //辰鑫400350DW电机 ,700 是低温实验的程序
+#define FARTHEST_POSITION_DC_B_MOTOR    800 //800 辰鑫400350DW电机正式程序的参数800        //辰鑫400350DW电机 ,700 是低温实验的程序
                                                         //                                                                ;  8（进）,8（排）    ;  9, 10     ； 7, 16    ；4, 11 ;    30, 34（摇晃）;   15, 3 ;   19, 15  ;  12, -149 （摇晃）; 16, 0 ; 
                                                         //第2、3、4、8台，百叶开启到最大+70step，
 //>>>>>>>>>>>>>>>>>>>>>>>>>>>>新版电机（增加运放，没有取消120Ω电阻）+新版结构（2个螺丝固定+减小压铸件间隙）  //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -245,7 +262,7 @@ extern "C" {
 #define INVALID                         0
 #define MACHINE_ERR                     1
 #define MACHINE_OK                      0
-#define FAN_EFFICACY_NUM_MAX            10
+#define FAN_EFFICACY_NUM_MAX            25
 #define OUT_STATUS_CLOSE                1
 #define OUT_STATUS_OPEN                 0
 #if (MOTOR_TYPE == 1)
@@ -262,10 +279,10 @@ extern "C" {
 //>>>>>>>>>>>>>>>>以下是直流有刷推杆电机和福佑风机的电流参数表>>>>>>>>>>>>>>>>>
 
 
-#define DC_MOTOR0_MA		INVALID             //PCB 位号 P9       //进风，预留
+#define DC_MOTOR0_MA		VALID               //PCB 位号 P5       //排风
 
 #if (MACHINE_MODE == MACHINE_HW_MODE || MACHINE_MODE == MACHINE_YGDY_MODE || MACHINE_MODE == MACHINE_NO_MODE)
-#define DC_MOTOR1_MA		VALID               //PCB 位号 P10      //进风
+#define DC_MOTOR1_MA		VALID               //PCB 位号 P6      //进风
 
 #endif
 
@@ -273,7 +290,7 @@ extern "C" {
 #define DC_MOTOR1_MA		INVALID               //PCB 位号 P10      //进风
 
 #endif
-#define DC_MOTOR2_MA		VALID               //PCB 位号 P11      //排风
+#define DC_MOTOR2_MA		INVALID             //实际没有这个通道
 #define DC_MOTOR3_MA		INVALID             //实际没有这个通道
 
 

@@ -37,22 +37,31 @@ extern TIM_HandleTypeDef htim16;
 __IO uint32_t mOSTM16_SysTick10us_A = 0;
 __IO uint32_t mOSTM16_SysTick10us_K = 0;
 __IO uint32_t mOSTM16_SysTick10ms_K = 0;
-__IO uint32_t mOSTM16_SysTick10us_M = 0;
 __IO uint32_t mOSTM16_SysTick10us_CMD510B_M_A = 0;
 __IO uint32_t mOSTM16_SysTick10us_CMD510B_M_B = 0;
-__IO uint32_t mOSTM16_SysTick10us_M_C = 0;
 __IO uint32_t mAddFgVal = 0;
 __IO uint8_t mDebugFlagPowerDownCMD510BA[5];
 __IO uint8_t mDebugFlagPowerDownCMD510BB[5];
 
-#define THRESHOLD_LEN                   20
+#define THRESHOLD_LEN                   30
 #define THRESHOLD_LEN_DEC_1          (THRESHOLD_LEN - 1)
 
 #if (MOTOR_MODEL == CHENXIN_5840_3650)
 // const uint32_t FG_THRESHOLD[THRESHOLD_LEN] = {50000,50000,15000,12000,10000,8000,5000,5000,5000,5000
 //                                 ,500,5000,5000,5000,5000,5000,5000,5000,5000,500};      //400阈值对应电流： 230 ~ 342 （438mA ~ 651mA）
-const uint32_t FG_THRESHOLD[THRESHOLD_LEN] = {2400,1800,1500,1200,1000,800,500,500,500,500
-                                ,500,500,500,500,500,500,500,500,500,500};      //400阈值对应电流： 230 ~ 342 （438mA ~ 651mA）
+// const uint32_t FG_THRESHOLD[THRESHOLD_LEN] = {2400,1800,1500,1200,1000,800,500,500,500,500
+//                                 ,500,500,500,500,500,500,500,500,500,500};      //400阈值对应电流： 230 ~ 342 （438mA ~ 651mA）
+const uint32_t FG_THRESHOLD[THRESHOLD_LEN] = {2400,2400,2400,2400,2400,2400,2400,2400,2400,2400
+                                ,2400,2400,2400,2400,2400,2400,2400,2400,2400,2400
+								,2400,2400,2400,2400,2400,2400,2400,2400,2400,600};
+#endif
+
+//行程20mm 速度9mm/s  FG信号不用上拉电阻，5V输出
+// 迪洛克防爆电机 一个周期约 0.95ms ~ 1.0 ms   //第1个周期13ms ,第2个周期12ms ,第3个周期11ms ,第4个周期9ms ,第5个周期5ms ,
+#if (MOTOR_MODEL == DLK_YLSZ23)   
+const uint32_t FG_THRESHOLD[THRESHOLD_LEN] = {2000,1600,1600,1400,1000,800,700,500,300,250         // 400350DW 使用万融的电机，一个周期约1.75ms  , 第一个周期约5.4ms ，第二个周期约4.8ms
+                                 	,250,250,250,250,250,250,250,250,250,250
+									,250,250,250,250,250,250,250,250,250,250};           //220
 #endif
 extern void adcCallback(void);
 /* ----------------------- Start implementation -----------------------------*/
@@ -104,32 +113,32 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {	
   	if(htim->Instance == TIM16) {
 		mOSTM16_SysTick10us_A++;
-		mOSTM16_SysTick10us_M++;
 		mOSTM16_SysTick10us_K++;
 		mOSTM16_SysTick10us_CMD510B_M_A++;
 		mOSTM16_SysTick10us_CMD510B_M_B++;
-		mOSTM16_SysTick10us_M_C++;
 
 		//将步进电机控制放在中断函数中，调高定时器中断的优先级
 		adcCallback();
-        
+
+#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == DLK_YLSZ23)
+
 		if(mMachineSta.activation == RUN_STA) {
             mAddFgVal = 0;   //50    //(采用PWM方式供电) 数组 ： 350 ， mAddFgVal = 150 ，电机运行约 300 次，出现1台进风电机打齿。
             
-            // if(mDoorRunNumSta >= 2) {       //已经在常温下回到了正常关闭百叶的状态
-            //     if(mKeySta.nowKeySta == OPEN_DOOR) {
-            //         if(mDoorSta.nowDoorPositionCMD510BMA < (FARTHEST_POSITION_DC_B_MOTOR - 100))
-            //             mAddFgVal = 5000;//mAddFgVal = 0;//
-            //         else
-            //             mAddFgVal = 0;
-            //     }
-            //     else {
-            //         if(mDoorSta.nowDoorPositionCMD510BMA < 50)
-            //             mAddFgVal = 0;
-            //         else 
-            //             mAddFgVal = 5000;//mAddFgVal = 0;//
-            //     }
-            // }
+//>>>>>>>>>>>>>>>>>>>  中途提高驱动力的处理  >>>>>>>>>>>>>>>>>>>
+            if(mKeySta.nowKeySta == OPEN_DOOR) {
+                if(mCount.motorCMD510BRunStaA < (FARTHEST_POSITION_DC_B_MOTOR - 100))
+                    mAddFgVal = 200;    //庆城是400关紧  600动作，所以 mAddFgVal = 200;   增强齿轮是500关紧 800动作，所以 mAddFgVal = 300;
+                else
+                    mAddFgVal = 0;
+            }
+            else {
+                if(mCount.motorCMD510BRunStaA < 500 && mDoorSta.nowDoorPositionCMD510BMA > 100)
+                    mAddFgVal = 200;    //庆城是400关紧  600动作，所以 mAddFgVal = 200;   增强齿轮是500关紧 800动作，所以 mAddFgVal = 300;
+                else 
+                    mAddFgVal = 0;
+            }
+//<<<<<<<<<<<<<<<<<<<  中途提高驱动力的处理  <<<<<<<<<<<<<<<<<<<
 
 			if((mCount.motorCMD510BRunStaA >= THRESHOLD_LEN_DEC_1 && mOSTM16_SysTick10us_CMD510B_M_A >= (FG_THRESHOLD[THRESHOLD_LEN_DEC_1] + mAddFgVal)) 
             || (mOSTM16_SysTick10us_CMD510B_M_A >= (FG_THRESHOLD[mCount.motorCMD510BRunStaA] + mAddFgVal) && (mCount.motorCMD510BRunStaA < THRESHOLD_LEN_DEC_1 && mCount.motorCMD510BRunStaA > 0)) 
@@ -143,9 +152,25 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
                 }
 				mOSTM16_SysTick10us_CMD510B_M_A = 0;
 				if(mKeySta.nowKeySta == CLOSE_DOOR) {		// 堵转停止说明是到了关门极限位置，如果是门被卡住，则有漏洞，但不加此逻辑结构件会出现百叶越开越小的问题
-					mDoorSta.nowDoorPositionCMD510BMA = 0;   //ZBL 20250826   低温实验用的临时屏蔽代码
+					mDoorSta.nowDoorPositionCMD510BMA = 0;
 				}
-			}
+			}			
+//>>>>>>>>>>>>>>>>>>>  中途提高驱动力的处理  >>>>>>>>>>>>>>>>>>>
+
+            if(mKeySta.nowKeySta == OPEN_DOOR) {
+                if(mCount.motorCMD510BRunStaB < (FARTHEST_POSITION_DC_B_MOTOR - 100))
+                    mAddFgVal = 200;    //庆城是400关紧  600动作，所以 mAddFgVal = 200;   增强齿轮是500关紧 800动作，所以 mAddFgVal = 300;
+                else
+                    mAddFgVal = 0;
+            }
+            else {
+                if(mCount.motorCMD510BRunStaB < 500 && mDoorSta.nowDoorPositionCMD510BMB > 100)
+                    mAddFgVal = 200;    //庆城是400关紧  600动作，所以 mAddFgVal = 200;   增强齿轮是500关紧 800动作，所以 mAddFgVal = 300;
+                else 
+                    mAddFgVal = 0;
+            }
+
+//<<<<<<<<<<<<<<<<<<<  中途提高驱动力的处理  <<<<<<<<<<<<<<<<<<<
 			if((mCount.motorCMD510BRunStaB >= THRESHOLD_LEN_DEC_1 && mOSTM16_SysTick10us_CMD510B_M_B >= (FG_THRESHOLD[THRESHOLD_LEN_DEC_1] + mAddFgVal))
             || (mOSTM16_SysTick10us_CMD510B_M_B >= (FG_THRESHOLD[mCount.motorCMD510BRunStaB] + mAddFgVal) && (mCount.motorCMD510BRunStaB < THRESHOLD_LEN_DEC_1 && mCount.motorCMD510BRunStaB > 0))
             || (mCount.motorCMD510BRunStaB == 0 && mOSTM16_SysTick10us_CMD510B_M_B > 2600)) {	//power up 25ms，FG is 0，
@@ -160,11 +185,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 				mOSTM16_SysTick10us_CMD510B_M_B = 0;
 				if(mKeySta.nowKeySta == CLOSE_DOOR) {		// 堵转停止说明是到了关门极限位置，如果是门被卡住，则有漏洞，但不加此逻辑结构件会出现百叶越开越小的问题
-					mDoorSta.nowDoorPositionCMD510BMB = 0;   //ZBL 20250826   低温实验用的临时屏蔽代码
+					mDoorSta.nowDoorPositionCMD510BMB = 0;
 				}
 			}
 		}
 
+#endif
 
 	}
 	else if(htim->Instance == TIM14)

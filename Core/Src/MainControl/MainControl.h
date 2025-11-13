@@ -148,6 +148,8 @@ typedef struct DOOR_STA
   int32_t motorCurNum[MOTOR_BDC_NUMBER_MAX];       //记录直流有刷电机运动过程中电流超过阈值的次数，对于没有FG信号的电机可以通过此方式确定电机旋转角度的近似值。
   int32_t nowDoorPositionCMD510BMA;  //CMD510B for DC brushless motor  A 
   int32_t nowDoorPositionCMD510BMB;  //CMD510B for DC brushless motor  B 
+  int32_t doorPositionFinalA;
+  int32_t doorPositionFinalB;
 
 }stDOOR_STA;
 
@@ -202,11 +204,9 @@ extern __IO stKEY_STA mKeySta;
 extern stMACHINE_STA mMachineSta;
 extern stMOTOR_BDC mMotorBDC;
 extern __IO uint32_t mOSTM16_SysTick10us_K;
-extern __IO uint32_t mOSTM16_SysTick10us_M;
 extern __IO uint32_t mOSTM16_SysTick10ms_K;
 extern __IO uint32_t mOSTM16_SysTick10us_CMD510B_M_A;
 extern __IO uint32_t mOSTM16_SysTick10us_CMD510B_M_B;
-extern __IO uint32_t mOSTM16_SysTick10us_M_C;
 extern int mDoorRunNumSta;
 extern stMACHINE_MDBUS_STA mMachineModbusSta;
 // extern uint16_t mMotorCurTemp[1024];

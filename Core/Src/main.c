@@ -91,7 +91,7 @@ FILE __stdin;
 int fputc(int ch, FILE *f)
 {
   HAL_UART_Transmit(&huart2, (uint8_t *)&ch, 1, 0xffff);
-	while ((USART2->ISR & UART_FLAG_TXE) == 0) {}  //�ȴ����ݷ������????????
+	while ((USART2->ISR & UART_FLAG_TXE) == 0) {}  //�ȴ����ݷ������????????
   return ch;
 }
 
@@ -163,7 +163,7 @@ int main(void)
   PrintfVersion();
   InitVar();
   setLED0(0);
-#if (MACHINE_MODE == MACHINE_HW_MODE || MACHINE_MODE == MACHINE_YGDY_MODE || MACHINE_MODE == MACHINE_HY_MODE)  //华为和阳光电源，采用软件强拉常闭触点，更为科学�??
+#if (MACHINE_MODE == MACHINE_HW_MODE || MACHINE_MODE == MACHINE_YGDY_MODE || MACHINE_MODE == MACHINE_HY_MODE)  //华为和阳光电源，采用软件强拉常闭触点，更为科学�??
   setSysErr(OUT_STATUS_CLOSE);
 #endif
 #if (MACHINE_MODE == MACHINE_NO_MODE)  //常开触点机型
