@@ -217,7 +217,7 @@ extern "C" {
 /* Definition of ADCx conversions data table size */
 #define ADC_CONVERTED_DATA_BUFFER_SIZE   ((uint32_t)  8)
 
-#define ADC_SAMPLING_PERIOD             40
+#define ADC_SAMPLING_PERIOD             20
 #define ADC_DIVISION_VAL                50
 
 #define ADC_LOGIC_CHANNEL_0             0

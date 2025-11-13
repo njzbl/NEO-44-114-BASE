@@ -109,7 +109,7 @@ extern __IO   uint16_t   aADCxConvertedData[ADC_CONVERTED_DATA_BUFFER_SIZE];
 /*****************************************************************************************************************************
  *                                                                  Function Source code
  ****************************************************************************************************************************/
-extern __IO uint32_t mOSTM16_SysTick10us_A;
+extern __IO uint32_t mOSTM16_SysTick20us_A;
 extern uint8_t mMotorPowerEnabled;
 __IO stADC_SAMPLING mFanAdc = {0};
 __IO stADC_SAMPLING mMotorAdc[3] = {0};
@@ -357,8 +357,8 @@ void adcSampling(void)
 
 void adcCallback(void)
 {
-    if(mOSTM16_SysTick10us_A >= ADC_SAMPLING_PERIOD) {
-        mOSTM16_SysTick10us_A = 0;
+    if(mOSTM16_SysTick20us_A >= ADC_SAMPLING_PERIOD) {
+        mOSTM16_SysTick20us_A = 0;
         mFanAdc.DivVal[mFanAdc.DivNum++] = aADCxConvertedData[ADC_FAN_CURRENT_CH];
         if(mFanAdc.DivNum == ADC_DIVISION_VAL) {
             mFanAdc.DivNum = 0;
@@ -376,7 +376,7 @@ void adcCallback(void)
     mMotorAdc[0].DivVal[mMotorAdc[0].DivNum] = aADCxConvertedData[ADC_M1_CURRENT_CH];
     mMotorAdc[1].DivVal[mMotorAdc[0].DivNum] = aADCxConvertedData[ADC_M2_CURRENT_CH];
     mMotorAdc[0].DivNum++;
-    if(mMotorAdc[0].DivNum == ADC_DIVISION_VAL) {       //这里只判断[0]是为了减少中断处理时间，10us一个中断。 
+    if(mMotorAdc[0].DivNum == ADC_DIVISION_VAL) {       //这里只判断[0]是为了减少中断处理时间，20us一个中断。 
         mMotorAdc[0].DivNum = 0;
         mMotorAdc[0].SamplingFalg = 1;
     }

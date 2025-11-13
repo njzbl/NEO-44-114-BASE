@@ -103,7 +103,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
         }
 #endif
         mDoorSta.doorPositionFinalA++;
-		mOSTM16_SysTick10us_CMD510B_M_A = 0;	//clear Motor A pluse count, if the number over 500ms is NG.
+		mOSTM16_SysTick20us_CMD510B_M_A = 0;	//clear Motor A pluse count, if the number over 500ms is NG.
 		if(mKeySta.nowKeySta == OPEN_DOOR) {
 			mDoorSta.nowDoorPositionCMD510BMA++;
 			if(mDoorSta.nowDoorPositionCMD510BMA >= FARTHEST_POSITION_DC_B_MOTOR) {
@@ -111,7 +111,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
                 if(mDebugFlagPowerDownCMD510BA[1] == 0) {
 #if (MOTOR_MODEL == CHENXIN_5840_3650)
 				    setBDCMotorStop(0);      //   ZBL  20250418
-                    //  printf("PowerDownShadesMotorAAA() mCount.motosrCMD510BRunStaA = %d mOSTM16_SysTick10us_CMD510B_M_A = %d mDoorSta.nowDoorPositionCMD510BMA = %d \r\n",mCount.motorCMD510BRunStaA,mOSTM16_SysTick10us_CMD510B_M_A,mDoorSta.nowDoorPositionCMD510BMA);
+                    //  printf("PowerDownShadesMotorAAA() mCount.motosrCMD510BRunStaA = %d mOSTM16_SysTick20us_CMD510B_M_A = %d mDoorSta.nowDoorPositionCMD510BMA = %d \r\n",mCount.motorCMD510BRunStaA,mOSTM16_SysTick20us_CMD510B_M_A,mDoorSta.nowDoorPositionCMD510BMA);
                 
 #endif
                     mDebugFlagPowerDownCMD510BA[1] = 1;
@@ -139,7 +139,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
         }
 #endif
         mDoorSta.doorPositionFinalB++;
-		mOSTM16_SysTick10us_CMD510B_M_B = 0;	//clear Motor B pluse count, if the number over 500ms is NG.
+		mOSTM16_SysTick20us_CMD510B_M_B = 0;	//clear Motor B pluse count, if the number over 500ms is NG.
 		if(mKeySta.nowKeySta == OPEN_DOOR) {
 			mDoorSta.nowDoorPositionCMD510BMB++;
 			if(mDoorSta.nowDoorPositionCMD510BMB >= FARTHEST_POSITION_DC_B_MOTOR) {
@@ -313,9 +313,9 @@ int MainControl(void)
 	// int8_t pluseSta1 = 0;
 	// int8_t pluseSta2 = 0;
 	uint32_t delayKey = 0;
-	if(mOSTM16_SysTick10us_K >= MAINCONTROL_10US_TO_10MS) {	// 10ms
+	if(mOSTM16_SysTick20us_K >= MAINCONTROL_20US_TO_10MS) {	// 10ms
 		mCount.delay10ms++;
-		mOSTM16_SysTick10us_K = 0;
+		mOSTM16_SysTick20us_K = 0;
 		mCount.fan++;
 		mCount.motor++;
 		if (mCount.initBackDoor < 600000) {  //600s
@@ -333,7 +333,7 @@ int MainControl(void)
 	}
     UpdataModbusAddr();
 	mInputSta.startQG = getChkSta();
-		// printf("mOSTM16_SysTick10us_K = %d mInputSta.startQG = %d\r\n",mOSTM16_SysTick10us_K,mInputSta.startQG);
+		// printf("mOSTM16_SysTick20us_K = %d mInputSta.startQG = %d\r\n",mOSTM16_SysTick20us_K,mInputSta.startQG);
 #if (LOOP_TEST == 1)
 	if(mCount.loopTestCount <= 650) {	//if(mCount.loopTestCount <= 3000) {
 		mInputSta.startQG = GPIO_PIN_SET;
@@ -354,7 +354,7 @@ int MainControl(void)
 			mInputSta.startQG = GPIO_PIN_SET;
 		}
 	}
-	// printf("mOSTM16_SysTick10us_K:%d;%d\r\n",mOSTM16_SysTick10us_K,mInputSta.startQG);
+	// printf("mOSTM16_SysTick20us_K:%d;%d\r\n",mOSTM16_SysTick20us_K,mInputSta.startQG);
 	
 	// if (mDoorRunNumSta == 0) {
 	// 	delayKey = DELAY_150MS;
@@ -799,8 +799,8 @@ void OpenExShades(void)
 		setBDCMotorForward(MOTOR2_LOGIC_CHN);
         mCount.motorCMD510BRunStaA = 0;
         mCount.motorCMD510BRunStaB = 0;
-        mOSTM16_SysTick10us_CMD510B_M_A = 0;
-        mOSTM16_SysTick10us_CMD510B_M_B = 0;
+        mOSTM16_SysTick20us_CMD510B_M_A = 0;
+        mOSTM16_SysTick20us_CMD510B_M_B = 0;
         for(int i = 0; i < 5; i++) {
             mDebugFlagPowerDownCMD510BA[i] = 0;
             mDebugFlagPowerDownCMD510BB[i] = 0;
@@ -829,8 +829,8 @@ void CloseExShades(void)
 		setBDCMotorForward(MOTOR2_LOGIC_CHN);
         mCount.motorCMD510BRunStaA = 0;
         mCount.motorCMD510BRunStaB = 0;
-        mOSTM16_SysTick10us_CMD510B_M_A = 0;
-        mOSTM16_SysTick10us_CMD510B_M_B = 0;
+        mOSTM16_SysTick20us_CMD510B_M_A = 0;
+        mOSTM16_SysTick20us_CMD510B_M_B = 0;
         for(int i = 0; i < 5; i++) {
             mDebugFlagPowerDownCMD510BA[i] = 0;
             mDebugFlagPowerDownCMD510BB[i] = 0;

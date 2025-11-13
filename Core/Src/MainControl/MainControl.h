@@ -80,11 +80,7 @@
 #define MOTOR_BDC_CURRENT_MAX_FARWORD			      2000000		//最大的堵转电流，实际值测量。开门2.0A截止
 #define MOTOR_BDC_CURRENT_MAX_BACK				      -1650000		//最大的堵转电流，实际值测量。关门2.8~3.0A截止，关门时需要大力矩锁紧，合理
 
-#define MAINCONTROL_10US_TO_0MS                 0
-#define MAINCONTROL_10US_TO_2_5MS               250
-#define MAINCONTROL_10US_TO_5_0MS               500
-#define MAINCONTROL_10US_TO_7_5MS               750
-#define MAINCONTROL_10US_TO_10MS                1000
+#define MAINCONTROL_20US_TO_10MS                500
 
 #define KEY_VAL_OPEN_WIN                            0
 #define KEY_VAL_CLOSE_WIN                           1
@@ -98,7 +94,7 @@
  ****************************************************************************************************************************/
 typedef struct COUNT
 {
-  uint32_t delay_10us;
+  uint32_t delay_20us;
   uint32_t delay10ms;
   uint32_t key;
   uint32_t agingCheck;
@@ -203,10 +199,10 @@ extern __IO stDOOR_STA mDoorSta;
 extern __IO stKEY_STA mKeySta;
 extern stMACHINE_STA mMachineSta;
 extern stMOTOR_BDC mMotorBDC;
-extern __IO uint32_t mOSTM16_SysTick10us_K;
+extern __IO uint32_t mOSTM16_SysTick20us_K;
 extern __IO uint32_t mOSTM16_SysTick10ms_K;
-extern __IO uint32_t mOSTM16_SysTick10us_CMD510B_M_A;
-extern __IO uint32_t mOSTM16_SysTick10us_CMD510B_M_B;
+extern __IO uint32_t mOSTM16_SysTick20us_CMD510B_M_A;
+extern __IO uint32_t mOSTM16_SysTick20us_CMD510B_M_B;
 extern int mDoorRunNumSta;
 extern stMACHINE_MDBUS_STA mMachineModbusSta;
 // extern uint16_t mMotorCurTemp[1024];
