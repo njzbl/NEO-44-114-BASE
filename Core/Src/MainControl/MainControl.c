@@ -43,12 +43,15 @@ uint8_t mBDCSta[2] = {0};           //0: 初始状态 1：允许开启状态  2�
 uint8_t mMotorPowerEnabled = 0;     //刚开机时禁止推杆电机供电，这样可以采用0电流时的电平。
 __IO uint32_t mCMD510BPowerFlagA = 0;
 __IO uint32_t mCMD510BPowerFlagB = 0;
+__IO uint32_t mCMD510BPowerFlagC = 0;
 extern __IO uint8_t mDebugFlagPowerDownCMD510BA[5];
 extern __IO uint8_t mDebugFlagPowerDownCMD510BB[5];
+extern __IO uint8_t mDebugFlagPowerDownCMD510BC[5];
 
 extern __IO uint32_t mPtMotorCurrentMax[30];
 extern __IO uint8_t mPtMotorCurrentCount[3];
 extern __IO uint8_t mPtMotorPushCurrentCount[3];
+extern uint32_t mMotorMaxCurrentTime[3];
 // uint16_t mMotorCurTemp[1024] = {0};
 uint16_t mMotorCurCount = 0;
 uint16_t mMotorCurCountFlag = 0;
@@ -160,6 +163,50 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 				
 		}
 	}
+	
+	else if(GPIO_Pin == FAN_FG_Pin) {
+        if(mCMD510BPowerFlagC == 1) {       //增加了下拉电阻，这条限制语句就可以不用增加了
+            return ;
+        }
+#if (MOTOR_MODEL == TZC36_5840_3650)
+        if(mCount.motor > 200) {      //因为万融电机,前500ms内FG就没有
+            mCount.motorCMD510BRunStaC++;
+        }
+#else
+        if(mCount.motor > 1) {      //因为14米长线时,前50ms内FG不稳定
+            mCount.motorCMD510BRunStaC++;
+        }
+#endif
+        mDoorSta.doorPositionFinalC++;
+		mOSTM16_SysTick20us_CMD510B_M_C = 0;	//clear Motor B pluse count, if the number over 500ms is NG.
+		if(mKeySta.nowKeySta == OPEN_DOOR) {
+			mDoorSta.nowDoorPositionCMD510BMC++;
+			if(mDoorSta.nowDoorPositionCMD510BMC >= FARTHEST_POSITION_DC_B_MOTOR) {
+                if(mDebugFlagPowerDownCMD510BC[1] == 0) {
+                    
+#if (MOTOR_MODEL == CHENXIN_5840_3650)
+				    setBDCMotorStop(2);    //   ZBL  20250418
+#endif
+                    mDebugFlagPowerDownCMD510BC[1] = 1;
+                }
+			}
+		}
+		else if(mKeySta.nowKeySta == CLOSE_DOOR) {
+			mDoorSta.nowDoorPositionCMD510BMC--;
+			if(mDoorSta.nowDoorPositionCMD510BMC <= 0) {
+				mDoorSta.nowDoorPositionCMD510BMC = 0;
+			}
+				
+		}
+	}
+
+#endif
+
+#if(FAN_MODEL == FAN_MODEL_DC_100W)
+	if(GPIO_Pin == FAN_FG_Pin) {
+		mCount.fanRunSta++;
+	}
+
 #endif
 }
 
@@ -199,7 +246,7 @@ void InitVar(void)
     mMachineModbusSta.fanRPMTotal = 0;                              //上电时默认风扇转速处于0状态；
     mMachineModbusSta.fan1RPM = 0;                                  //上电时默认风扇转速处于0状态；
     mMachineModbusSta.fan2RPM = 0;                                  //上电时默认风扇转速处于0状态；
-    mMachineModbusSta.temperature = mTemplateAdc.NowVal + 273;      //开氏温度  MCU温度
+    mMachineModbusSta.temperature = mTemplateAdc.CurrentVal + 273;      //开氏温度  MCU温度
     mMachineModbusSta.FanSta2 = NORMAL_MODE;                        //上电时默认百叶处于关闭状态；
 }
 
@@ -223,6 +270,7 @@ void InitNewKeyVar(uint8_t keySta)
 	mCount.motorRunStaB = 0;
 	mCount.motorCMD510BRunStaA = 0;
 	mCount.motorCMD510BRunStaB = 0;
+	mCount.motorCMD510BRunStaC = 0;
 	mCount.motorRunPluseIndex = 0;
     mDoorSta.doorPositionFinalA = 0;
     mDoorSta.doorPositionFinalB = 0;
@@ -276,6 +324,7 @@ void InitNewKeyVar(uint8_t keySta)
         mPtMotorCurrentMax[i+9] = 0;
         mPtMotorCurrentCount[i] = 0;
         mPtMotorPushCurrentCount[i] = 0;
+		mMotorMaxCurrentTime[i] = 0;
 	}
 
 	mMotorBDC.motorBDCValid[0] = DC_MOTOR0_MA;
@@ -301,6 +350,9 @@ void InitNewKeyVar(uint8_t keySta)
     //     mMotorCurTemp[i] = 0;
     mMotorCurCount = 0;
     mMotorCurCountFlag = 0;
+	mDoorRunNumSta++;
+	if(mDoorRunNumSta >= 3)
+		mDoorRunNumSta = 3;
 }
 
 /*****************************************************************************************************************************
@@ -346,7 +398,7 @@ int MainControl(void)
 	else
 		mCount.loopTestCount = 0;
 #endif
-	if(mDoorRunNumSta == 0) {
+	if(mDoorRunNumSta < 2) {
 		if(mCount.initBackDoor < DELAY_1S)	{	//前1秒开门，后6秒关门，为了避开关门初期接近开关不可靠接触，采用惯性关门。
 			mInputSta.startQG = GPIO_PIN_RESET;
 		}
@@ -356,7 +408,7 @@ int MainControl(void)
 	}
 	// printf("mOSTM16_SysTick20us_K:%d;%d\r\n",mOSTM16_SysTick20us_K,mInputSta.startQG);
 	
-	// if (mDoorRunNumSta == 0) {
+	// if (mDoorRunNumSta < 2) {
 	// 	delayKey = DELAY_150MS;
 	// }
 	// else {
@@ -430,7 +482,7 @@ int MainControl(void)
 
 
 #if (MACHIME_POWER_LOSS_PROTECTION == PROTECTION_ENABLED)
-    if(mPowerAdcB.NowVal < mPowerAdcB.ThresholdMin && mCount.initBackDoor > DELAY_7S) {      //上电7秒以后  ,断电自动关闭百叶。
+    if(mPowerAdcB.CurrentVal < mPowerAdcB.ThresholdMin && mCount.initBackDoor > DELAY_7S) {      //上电7秒以后  ,断电自动关闭百叶。
         mKeyValQG = KEY_VAL_CLOSE_WIN;
     }
 #endif
@@ -455,10 +507,10 @@ int MainControl(void)
     mAutoVal485 = getAutoStaModbus();
     mTestVal485 = getTestStaModbus();
 
-    if(mNtc10KAdc.NowVal >= 35) {
+    if(mNtc10KAdc.CurrentVal >= 35) {
         mKeyValTemp = KEY_VAL_OPEN_WIN;
     }
-    else if(mNtc10KAdc.NowVal <= 30) {
+    else if(mNtc10KAdc.CurrentVal <= 30) {
         mKeyValTemp = KEY_VAL_CLOSE_WIN;
     }
 
@@ -511,6 +563,7 @@ int MainControl(void)
 			mKeySta.nextKeySta = UNCERTAIN;
 	}
 
+#if (FAN_MODEL == FAN_MODEL_AC_75W)
 	if(mCount.fan >= DELAY_4S) {	//风机开启或者关闭信号发出后延时4秒钟，检测电流
 		if(mFanAdc.CurFlag == 1) {	//mFanCurFalg：采集数据有效
 			mFanAdc.CurFlag = 0;
@@ -518,22 +571,35 @@ int MainControl(void)
 #if (STOP_FAN_CUR_CHECK == 0)       //
 			if(mKeySta.nowKeySta == OPEN_DOOR) {	//闭合气感信号，要求开窗、开风机
 #endif
-				if(mFanAdc.NowVal >= mFanAdc.ThresholdMin && mFanAdc.NowVal <= mFanAdc.ThresholdMax) {
+				if(mFanAdc.CurrentVal >= mFanAdc.ThresholdMin && mFanAdc.CurrentVal <= mFanAdc.ThresholdMax) {
 					mCount.fanRunSta++;		//记录风机正常电流值在一个检测周期内的步数
-					// printf("mFanAdc.NowVal = %d mFanAdc.Threshold = %d mCount.fanRunSta = %d\r\n",mFanAdc.NowVal,mFanAdc.Threshold,mCount.fanRunSta);
+					// printf("mFanAdc.CurrentVal = %d mFanAdc.Threshold = %d mCount.fanRunSta = %d\r\n",mFanAdc.CurrentVal,mFanAdc.Threshold,mCount.fanRunSta);
 				}
 #if (STOP_FAN_CUR_CHECK == 0)
 			}
 #endif
 		}
 	}
+#endif
 
-	if(mCount.motor >= DELAY_6S && mCount.motor < DELAY_7S)	{//6000 ms 要出输出报告
+
+	uint32_t delay_total_1 = DELAY_6S,delay_total_2 = DELAY_7S;
+#if(MOTOR_MODEL == DLK_TG_60W)          //25°C 电机推出时完全堵转，mMotorAdc[j].CurrentVal 瞬间最大值3275，然后逐渐降低最后一直稳定在2800左右，此时稳压电源读数为：2.6 ~ 2.8A ，在低温-30°C时小裴测试稳压电源读数2.9A
+	if(mNtc10KAdc.CurrentVal > -10) {
+		delay_total_1 = DELAY_6S;
+		delay_total_2 = DELAY_7S;
+	}
+	else {
+		delay_total_1 = DELAY_25S;
+		delay_total_2 = DELAY_26S;
+	}
+#endif
+	if(mCount.motor >= delay_total_1 && mCount.motor < delay_total_2)	{//6000 ms 要出输出报告
 		mMachineSta.activation = STOP_STA;
 		// PowerDownInShadesMotorA();
 		// PowerDownInShadesMotorB();
 		StopExShades();  //临时测试把这条语句删除，实际使用过程中不可删除。  //zbl 20240522
-		if(mDoorRunNumSta == 0) {	//上电后第一次开/关门命令，不理会电机状态，因为不知道上电时门状态。
+		if(mDoorRunNumSta <= 2) {	//上电后第一次开/关门命令，不理会电机状态，因为不知道上电时门状态。
 			mOutputSta.motorS1 = MACHINE_OK;  //默认OK
 		}
 		else {
@@ -599,12 +665,12 @@ int MainControl(void)
 		// printf("mCount.motorBDCRunSta[0-2] = %d_%d_%d\r\n",mCount.motorBDCRunSta[0],mCount.motorBDCRunSta[1],mCount.motorBDCRunSta[2]);
 		// printf("setOUT_C0(%d);  = %d, A,B = %d, %d\r\n",mOutputSta.motorS1, mCount.motorRunSta,mCount.motorRunStaA, mCount.motorRunStaB);
 		
-		if(mKeySta.nowKeySta == CLOSE_DOOR) { //应该在关百叶的角度信号小于200时清零。
-			printf("Close mDoorSta.motorFG A,B,C = %d, %d, %d ; DCMA,B = %d, %d, %d ; LAST,B = %d, %d, %d\r\n",mDoorSta.nowDoorPositionCMD510BMA,mDoorSta.nowDoorPositionCMD510BMB, mDoorSta.doorPositionFinalA,mDoorSta.nowDoorPositionDCM[0],mDoorSta.nowDoorPositionDCM[1],mDoorSta.nowDoorPositionDCM[2],mDoorSta.lastPositionCLoseDoor[0],mDoorSta.lastPositionCLoseDoor[1],mDoorSta.lastPositionCLoseDoor[2]);
-		}
-		else if(mKeySta.nowKeySta == OPEN_DOOR){
-			printf("Open  mDoorSta.motorFG A,B,C = %d, %d, %d ; DCMA,B = %d, %d, %d ; LAST,B = %d, %d, %d\r\n",mDoorSta.nowDoorPositionCMD510BMA,mDoorSta.nowDoorPositionCMD510BMB, mDoorSta.doorPositionFinalA,mDoorSta.nowDoorPositionDCM[0],mDoorSta.nowDoorPositionDCM[1],mDoorSta.nowDoorPositionDCM[2],mDoorSta.lastPositionCLoseDoor[0],mDoorSta.lastPositionCLoseDoor[1],mDoorSta.lastPositionCLoseDoor[2]);
-		}
+		// if(mKeySta.nowKeySta == CLOSE_DOOR) { //应该在关百叶的角度信号小于200时清零。
+		// 	printf("Close mDoorSta.motorFG A,B,C = %d, %d, %d ; DCMA,B = %d, %d, %d ; LAST,B = %d, %d, %d\r\n",mDoorSta.nowDoorPositionCMD510BMA,mDoorSta.nowDoorPositionCMD510BMB, mDoorSta.doorPositionFinalA,mDoorSta.nowDoorPositionDCM[0],mDoorSta.nowDoorPositionDCM[1],mDoorSta.nowDoorPositionDCM[2],mDoorSta.lastPositionCLoseDoor[0],mDoorSta.lastPositionCLoseDoor[1],mDoorSta.lastPositionCLoseDoor[2]);
+		// }
+		// else if(mKeySta.nowKeySta == OPEN_DOOR){
+		// 	printf("Open  mDoorSta.motorFG A,B,C = %d, %d, %d ; DCMA,B = %d, %d, %d ; LAST,B = %d, %d, %d\r\n",mDoorSta.nowDoorPositionCMD510BMA,mDoorSta.nowDoorPositionCMD510BMB, mDoorSta.doorPositionFinalA,mDoorSta.nowDoorPositionDCM[0],mDoorSta.nowDoorPositionDCM[1],mDoorSta.nowDoorPositionDCM[2],mDoorSta.lastPositionCLoseDoor[0],mDoorSta.lastPositionCLoseDoor[1],mDoorSta.lastPositionCLoseDoor[2]);
+		// }
 		if (mKeySta.nowKeySta == CLOSE_DOOR) { //应该在关百叶的角度信号小于200时清零。
 			for(i = 0; i < MOTOR_BDC_NUMBER_MAX; i++) {
 				if(mDoorSta.nowDoorPositionDCM[i] >= NEAREST_POSITION_DC_MOTOR_GB)
@@ -617,7 +683,7 @@ int MainControl(void)
 		// if(mDoorRunNumSta >= 0) {
 		// 	mDoorRunNumSta = 2;	//mDoorRunNumSta = 0; // 用于自我循环测试时使用的，赋值0 可以在及时大于5秒后也能一直使用虚拟按键。
 		// }
-		mCount.motor = DELAY_7S + 1;
+		mCount.motor = delay_total_2 + 1;
 		mDoorSta.countMidwayOpenDoor = 0;
         // for(int i = 0; i < 50; i++) {
         //     printf("L%d-%d %d %d %d %d_%d %d %d %d %d__%d %d %d %d %d_%d %d %d %d %d\r\n",(i + 1)
@@ -631,6 +697,8 @@ int MainControl(void)
 	else if(mCount.motor >= DELAY_7S) {
 		mCount.motor = DELAY_7S + 1;
 	}
+
+	
 	if(mCount.fan >= DELAY_6S) {	//风机独立开判断是为了风机在一直旋转，不停的检测风机的状态，当第一个5秒来到后，每1秒检测一次状态。
 		// printf("mAutoVal485 = %d getCtrlStaModbus() = %d mTestVal485 = %d \r\n",mAutoVal485, getCtrlStaModbus(),mTestVal485);
 
@@ -642,7 +710,12 @@ int MainControl(void)
 			else {
 				mOutputSta.fanS2 = MACHINE_ERR;
 			}
-			printf("mOutputSta.fanS2 = %d; mCount.fanRunSta = %d \r\n",mOutputSta.fanS2,mCount.fanRunSta);
+
+#if(MOTOR_MODEL == DLK_TG_60W)          //25°C 电机推出时完全堵转，mMotorAdc[j].CurrentVal 瞬间最大值3275，然后逐渐降低最后一直稳定在2800左右，此时稳压电源读数为：2.6 ~ 2.8A ，在低温-30°C时小裴测试稳压电源读数2.9A
+            	printf("mOutputSta.fanS2 = %d; mCount.fanRunSta = %d mDoorSta.motorCurNum[0,1]=%d,%d mMotorAdc[0:2].CurrentVal = %d_%d_%d\r\n",mOutputSta.fanS2,mCount.fanRunSta,mDoorSta.motorCurNum[0],mDoorSta.motorCurNum[1],mMotorAdc[0].CurrentVal,mMotorAdc[1].CurrentVal,mMotorAdc[2].CurrentVal);
+#else
+				printf("mOutputSta.fanS2 = %d; mCount.fanRunSta = %d mDoorSta.motorCurNum[0,1]=%d,%d\r\n",mOutputSta.fanS2,mCount.fanRunSta,mDoorSta.motorCurNum[0],mDoorSta.motorCurNum[1]);
+#endif
 		}
 #if (STOP_FAN_CUR_CHECK == 1)      
         else {
@@ -674,7 +747,7 @@ int MainControl(void)
 			setSysErr(OUT_STATUS_OPEN);
 		}
 		if(mKeySta.nowKeySta == OPEN_DOOR) {
-			// printf("setSysSta(1); %d_%d  FAN_%d,%d,%d\r\n",mOutputSta.motorS1,mOutputSta.fanS2,mFanAdc.NowVal,mFanAdc.ThresholdMin,mFanAdc.ThresholdMax);
+			// printf("setSysSta(1); %d_%d  FAN_%d,%d,%d\r\n",mOutputSta.motorS1,mOutputSta.fanS2,mFanAdc.CurrentVal,mFanAdc.ThresholdMin,mFanAdc.ThresholdMax);
 			printf("setSysSta(1);\r\n");
 			setSysSta(1);
 		}
@@ -686,28 +759,28 @@ int MainControl(void)
 
 #if (MACHINE_MODE == MACHINE_NO_MODE)  //MACHINE_QL_MODE，采用常开触点
 		if(mOutputSta.motorS1 == MACHINE_OK && mOutputSta.fanS2 == MACHINE_OK) {		//这个if语句放在这里降低了代码的可移植性，在移植时特别要注意
-			// printf("setSysErr(0);  ");      // 正常时输出开路状态
+			printf("setSysErr(0);  ");      // 正常时输出开路状态
 			setSysErr(OUT_STATUS_OPEN);
 		}
 		else {
 			mMachineModbusSta.machineWorkMode = FAILURE_MODE;
-			// printf("setSysErr(1);  ");      // 异常时输出闭合状态
+			printf("setSysErr(1);  ");      // 异常时输出闭合状态
 			setSysErr(OUT_STATUS_CLOSE);
 		}
 		if(mKeySta.nowKeySta == OPEN_DOOR) {
-			// printf("setSysSta(1); %d_%d  FAN_%d,%d,%d\r\n",mOutputSta.motorS1,mOutputSta.fanS2,mFanAdc.NowVal,mFanAdc.ThresholdMin,mFanAdc.ThresholdMax);
-			// printf("setSysSta(1);\r\n");
+			// printf("setSysSta(1); %d_%d  FAN_%d,%d,%d\r\n",mOutputSta.motorS1,mOutputSta.fanS2,mFanAdc.CurrentVal,mFanAdc.ThresholdMin,mFanAdc.ThresholdMax);
+			printf("setSysSta(1); mNtc10KAdc.CurrentVal = %d\r\n",mNtc10KAdc.CurrentVal);
 			setSysSta(1);
 		}
 		else {
-			// printf("setSysSta(0);\r\n");
+			printf("setSysSta(0); mNtc10KAdc.CurrentVal = %d\r\n",mNtc10KAdc.CurrentVal);
 			setSysSta(0);
 		}
 #endif
 
 //>>>>>>>>>485 反馈状态>>>>>>>>>>>>> 
         uint32_t fg_cur[MOTOR_BDC_NUMBER_MAX] = {0};        
-        if(mDoorRunNumSta == 0) {       //第一次默认都是正常的。
+        if(mDoorRunNumSta <= 2) {       //第一次默认都是正常的。
             for(i = 0 ;i < MOTOR_BDC_NUMBER_MAX;i++) {
                 mDoorSta.motorFG[i] = 5000;
                 mDoorSta.motorCurNum[i] = 5000;
@@ -767,12 +840,8 @@ int MainControl(void)
     // stATH20DATA ath20data;
     // uint8_t crc = AHT20_GetTransData(&ath20data);
     // AHT20_SeqTrans();
-	// printf("mPowerAdcB.NowVal = %d\r\n", mPowerAdcB.NowVal);
+	// printf("mPowerAdcB.CurrentVal = %d\r\n", mPowerAdcB.CurrentVal);
 
-		if(mDoorRunNumSta >= 0) {
-			mDoorRunNumSta = 2;	//mDoorRunNumSta = 0; // 用于自我循环测试时使用的，赋值0 可以在及时大于5秒后也能一直使用虚拟按键。
-            // printf("mDoorRunNumSta = 2;\r\n");
-		}
         if(mKeySta.nowKeySta == CLOSE_DOOR)     //这样写是简化判断逻辑。总之，只有在手动气感信号关闭百叶的时候，485信号才有效。
             mManualFlag = FALSE;
 	}
@@ -788,22 +857,27 @@ void OpenExShades(void)
 		mMachineSta.hBridgeSta = H_BRIDGE_STATE_OPEN_L;
 	}
 	else if(mMachineSta.hBridgeSta == H_BRIDGE_STATE_OPEN_L) {
-#if (MOTOR_MODEL == DLK_TG_60W)
+#if (MOTOR_MODEL == DLK_TG_60W || MOTOR_MODEL == WG_TG)
 		setBDCMotorForward(MOTOR1_LOGIC_CHN);
 		setBDCMotorForward(MOTOR2_LOGIC_CHN);
 #endif
-#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == DLK_YLSZ23)
-        setBLDCMotor(MOTOR1_LOGIC_CHN, 1);
-        setBLDCMotor(MOTOR2_LOGIC_CHN, 1);
+#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_YLSZ23_FB)
+        setBLDCMotor(MOTOR1_LOGIC_CHN, 1);  	//1:正常逻辑	//
+        setBLDCMotor(MOTOR2_LOGIC_CHN, 1);  	//1:正常逻辑	//
+		// setBLDCMotor(MOTOR1_LOGIC_CHN, 0);  	//0:辰鑫异常逻辑			//
+		// setBLDCMotor(MOTOR2_LOGIC_CHN, 0);  	//0:辰鑫异常逻辑			//
 		setBDCMotorForward(MOTOR1_LOGIC_CHN);
 		setBDCMotorForward(MOTOR2_LOGIC_CHN);
         mCount.motorCMD510BRunStaA = 0;
         mCount.motorCMD510BRunStaB = 0;
+        mCount.motorCMD510BRunStaC = 0;
         mOSTM16_SysTick20us_CMD510B_M_A = 0;
         mOSTM16_SysTick20us_CMD510B_M_B = 0;
+        mOSTM16_SysTick20us_CMD510B_M_C = 0;
         for(int i = 0; i < 5; i++) {
             mDebugFlagPowerDownCMD510BA[i] = 0;
             mDebugFlagPowerDownCMD510BB[i] = 0;
+            mDebugFlagPowerDownCMD510BC[i] = 0;
         }
 #endif
 		mMachineSta.hBridgeSta = H_BRIDGE_STATE_OPEN_H;
@@ -815,25 +889,31 @@ void CloseExShades(void)
 	if(mMachineSta.hBridgeSta == H_BRIDGE_STATE_WAIT) {
 		setBDCMotorStop(MOTOR1_LOGIC_CHN);
 		setBDCMotorStop(MOTOR2_LOGIC_CHN);
+		
 		mMachineSta.hBridgeSta = H_BRIDGE_STATE_OPEN_L;
 	}
 	else if(mMachineSta.hBridgeSta == H_BRIDGE_STATE_OPEN_L) {
-#if (MOTOR_MODEL == DLK_TG_60W)
+#if (MOTOR_MODEL == DLK_TG_60W || MOTOR_MODEL == WG_TG)
 		setBDCMotorBack(MOTOR1_LOGIC_CHN);
 		setBDCMotorBack(MOTOR2_LOGIC_CHN);
 #endif
-#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == DLK_YLSZ23)
-        setBLDCMotor(MOTOR1_LOGIC_CHN, 0);
-        setBLDCMotor(MOTOR2_LOGIC_CHN, 0);
+#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_YLSZ23_FB)
+        setBLDCMotor(MOTOR1_LOGIC_CHN, 0);  	//0:正常逻辑	//
+        setBLDCMotor(MOTOR2_LOGIC_CHN, 0);  	//0:正常逻辑	//
+		// setBLDCMotor(MOTOR1_LOGIC_CHN, 1);  	//1:辰鑫异常逻辑		//
+		// setBLDCMotor(MOTOR2_LOGIC_CHN, 1);  	//1:辰鑫异常逻辑		//
 		setBDCMotorForward(MOTOR1_LOGIC_CHN);
 		setBDCMotorForward(MOTOR2_LOGIC_CHN);
         mCount.motorCMD510BRunStaA = 0;
         mCount.motorCMD510BRunStaB = 0;
+        mCount.motorCMD510BRunStaC = 0;
         mOSTM16_SysTick20us_CMD510B_M_A = 0;
         mOSTM16_SysTick20us_CMD510B_M_B = 0;
+        mOSTM16_SysTick20us_CMD510B_M_C = 0;
         for(int i = 0; i < 5; i++) {
             mDebugFlagPowerDownCMD510BA[i] = 0;
             mDebugFlagPowerDownCMD510BB[i] = 0;
+            mDebugFlagPowerDownCMD510BC[i] = 0;
         }
 #endif
 		mMachineSta.hBridgeSta = H_BRIDGE_STATE_OPEN_H;
@@ -844,7 +924,7 @@ void StopExShades(void)
 {
 	setBDCMotorStop(MOTOR1_LOGIC_CHN);
 	setBDCMotorStop(MOTOR2_LOGIC_CHN);
-#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == DLK_YLSZ23)
+#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_YLSZ23_FB)
         setBLDCMotor(MOTOR1_LOGIC_CHN, 0);
         setBLDCMotor(MOTOR2_LOGIC_CHN, 0);
 #endif
@@ -858,7 +938,7 @@ void StopExShades(void)
 //sta : 0：motor reverse Rotation    1: motor forward rotate
 void setBLDCMotor(uint8_t chn, uint8_t sta)
 {
-#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == DLK_YLSZ23)
+#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_YLSZ23_FB)
     setDirPwm(chn, sta);
 #endif
 }
@@ -870,10 +950,10 @@ void setBLDCMotor(uint8_t chn, uint8_t sta)
 void StartFan(void)
 {
 #if (FAN_MODEL == FAN_MODEL_AC_75W)
-	setFanCtrl(1);
+	setACFanCtrl(1);
 #endif
 #if (FAN_MODEL == FAN_MODEL_DC_100W)
-	setFanCtrl(1);
+	setDCFanCtrl(1);
     setFanPWM(0);
 #endif
 }
@@ -881,10 +961,10 @@ void StartFan(void)
 void StopFan(void)
 {
 #if (FAN_MODEL == FAN_MODEL_AC_75W)
-	setFanCtrl(0);
+	setACFanCtrl(0);
 #endif
 #if (FAN_MODEL == FAN_MODEL_DC_100W)
-	setFanCtrl(0);
+	setDCFanCtrl(0);
 #endif
 }
 
@@ -896,7 +976,7 @@ void getBDCMotorCur(void)
 	else
 		return;
 	for(uint32_t i = 0;i < 3; i++) {
-		currentBDC = mMotorAdc[i].NowVal;
+		currentBDC = mMotorAdc[i].CurrentVal;
 		if(currentBDC > DC_CURRENT_MIN) {
 			mDoorSta.motorCurNum[i]++;
 

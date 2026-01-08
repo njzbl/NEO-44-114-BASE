@@ -26,6 +26,7 @@ extern uint8_t mBDCSta[2];
 extern uint8_t mMotorPowerEnabled;
 extern __IO uint32_t mCMD510BPowerFlagA;
 extern __IO uint32_t mCMD510BPowerFlagB;
+extern __IO uint32_t mCMD510BPowerFlagC;
 /* USER CODE END 0 */
 
 /*----------------------------------------------------------------------------*/
@@ -55,7 +56,7 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, LED_SYS_Pin|FAN_PWM_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, LED_SYS_Pin|FAN_PWM_Pin|DC_FAN_CTRL_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOF, SYS_STA_Pin|STS_ERR_Pin, GPIO_PIN_RESET);
@@ -65,14 +66,14 @@ void MX_GPIO_Init(void)
                           |DIR1_Pin|PWM1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, FAN_CTRL_Pin|MOTOR_PWR_CTRL2_Pin|BACK1_Pin|FRONT1_Pin
+  HAL_GPIO_WritePin(GPIOB, AC_FAN_CTRL_Pin|MOTOR_PWR_CTRL2_Pin|BACK1_Pin|FRONT1_Pin
                           |PWM2_Pin|DIR2_Pin|RS485_RE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, BACK2_Pin|FRONT2_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : PCPin PCPin */
-  GPIO_InitStruct.Pin = LED_SYS_Pin|FAN_PWM_Pin;
+  /*Configure GPIO pins : PCPin PCPin PCPin */
+  GPIO_InitStruct.Pin = LED_SYS_Pin|FAN_PWM_Pin|DC_FAN_CTRL_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -102,7 +103,7 @@ void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : PBPin PBPin PBPin PBPin
                            PBPin PBPin PBPin */
-  GPIO_InitStruct.Pin = FAN_CTRL_Pin|MOTOR_PWR_CTRL2_Pin|BACK1_Pin|FRONT1_Pin
+  GPIO_InitStruct.Pin = AC_FAN_CTRL_Pin|MOTOR_PWR_CTRL2_Pin|BACK1_Pin|FRONT1_Pin
                           |PWM2_Pin|DIR2_Pin|RS485_RE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -153,14 +154,26 @@ void setLED0(uint8_t sta)
 
 //sta == 1 set FAN_CTRL_Pin
 //sat == 0 reset FAN_CTRL_Pin
-void setFanCtrl(uint8_t sta)
+void setACFanCtrl(uint8_t sta)
 {
     GPIO_PinState pinSta;
     if(sta == 1)
         pinSta = GPIO_PIN_SET;
     else
         pinSta = GPIO_PIN_RESET;
-    HAL_GPIO_WritePin(FAN_CTRL_GPIO_Port, FAN_CTRL_Pin, pinSta);
+    HAL_GPIO_WritePin(AC_FAN_CTRL_GPIO_Port, AC_FAN_CTRL_Pin, pinSta);
+}
+
+//sta == 1 set FAN_CTRL_Pin
+//sat == 0 reset FAN_CTRL_Pin
+void setDCFanCtrl(uint8_t sta)
+{
+    GPIO_PinState pinSta;
+    if(sta == 1)
+        pinSta = GPIO_PIN_SET;
+    else
+        pinSta = GPIO_PIN_RESET;
+    HAL_GPIO_WritePin(DC_FAN_CTRL_GPIO_Port, DC_FAN_CTRL_Pin, pinSta);
 }
 
 //sta == 1 set FAN_CTRL_Pin
@@ -273,7 +286,7 @@ void setDirPwm(uint8_t chn,uint8_t sta)
     }
     else if(chn == 2){
 
-#if (FAN_MODEL == FAN_MODEL_AC_75W)
+#if (MACHIME_THIRD_MOTOR == THIRD_MOTOR_ENABLED)
         setFanPWM(sta);
 #endif
     }
@@ -301,6 +314,15 @@ void setBDCMotorForward(uint8_t sn)
         mCMD510BPowerFlagB = 0;
         break;
     }
+#if (MACHIME_THIRD_MOTOR == THIRD_MOTOR_ENABLED)
+
+    case 2: {
+        HAL_GPIO_WritePin(DC_FAN_CTRL_GPIO_Port, DC_FAN_CTRL_Pin, GPIO_PIN_SET);
+        mCMD510BPowerFlagC = 0;
+        break;
+    }
+#endif
+
     default:
         break;
     }
@@ -326,6 +348,13 @@ void setBDCMotorBack(uint8_t sn)
         HAL_GPIO_WritePin(MOTOR_PWR_CTRL2_GPIO_Port, MOTOR_PWR_CTRL2_Pin, GPIO_PIN_SET);
         break;
     }
+#if (MACHIME_THIRD_MOTOR == THIRD_MOTOR_ENABLED)
+    case 2: {
+        HAL_GPIO_WritePin(DC_FAN_CTRL_GPIO_Port, DC_FAN_CTRL_Pin, GPIO_PIN_SET);
+        break;
+    }
+#endif
+
     default:
         break;
     }
@@ -349,6 +378,14 @@ void setBDCMotorStop(uint8_t sn)
         mCMD510BPowerFlagB = 1;
         break;
     }
+#if (MACHIME_THIRD_MOTOR == THIRD_MOTOR_ENABLED)
+    case 2: {
+        HAL_GPIO_WritePin(DC_FAN_CTRL_GPIO_Port, DC_FAN_CTRL_Pin, GPIO_PIN_RESET);
+        mCMD510BPowerFlagC = 1;
+        break;
+    }
+#endif
+
     default:
         break;
     }

@@ -13,7 +13,11 @@ extern "C" {
 
 #define DETECT_FOREIGN_DISABLED             0
 #define DETECT_FOREIGN_ENABLED              1
-#define MACHIME_DETECT_FOREIGN              DETECT_FOREIGN_ENABLED
+#define MACHIME_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED
+
+#define THIRD_MOTOR_DISABLED                0
+#define THIRD_MOTOR_ENABLED                 1
+#define MACHIME_THIRD_MOTOR                 THIRD_MOTOR_DISABLED
 
 //风机功率设定，只能选择一种风机
 #define FAN_MODEL_AC_75W                  1
@@ -22,10 +26,16 @@ extern "C" {
 #define DLK_TG_60W                      0       //迪洛克推杆电机
 #define CHENXIN_5840_3650               1       //辰鑫蜗涡轮杆电机 400350DW
 #define TZC36_5840_3650                 2       //万融蜗涡轮杆电机
-#define DLK_YLSZ23                      3       //迪洛克fg推杆电机
-#define MOTOR_MODEL                     DLK_YLSZ23
+#define DLK_YLSZ23                      3       //迪洛克防爆款fg推杆电机
+#define DLK_YLSZ23_FB                   4       //迪洛克防爆款FB推杆电机,只反馈关紧百叶（电机完全伸出）的电平信号
+#define WG_TG                           5       //微光推杆电机
+#define MOTOR_MODEL                     CHENXIN_5840_3650
 
-#if (MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_TG_60W || MOTOR_MODEL == TZC36_5840_3650)
+#if (MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_YLSZ23_FB)
+#define MAX_CURRENT_MOTOR               8000        //9A     这里的阈值8000为暂定值，需要测试
+
+#endif
+#if (MOTOR_MODEL == DLK_TG_60W || MOTOR_MODEL == TZC36_5840_3650 || MOTOR_MODEL == WG_TG)
 #define MAX_CURRENT_MOTOR               5000        //9A     这里的阈值5000为暂定值，需要测试
 
 #endif
@@ -262,7 +272,16 @@ extern "C" {
 #define INVALID                         0
 #define MACHINE_ERR                     1
 #define MACHINE_OK                      0
+
+#if(FAN_MODEL == FAN_MODEL_AC_75W)
 #define FAN_EFFICACY_NUM_MAX            25
+
+#endif
+#if(FAN_MODEL == FAN_MODEL_DC_100W)
+#define FAN_EFFICACY_NUM_MAX            80    //实际1秒会有194个FG信号，台达22053
+
+#endif
+
 #define OUT_STATUS_CLOSE                1
 #define OUT_STATUS_OPEN                 0
 #if (MOTOR_TYPE == 1)

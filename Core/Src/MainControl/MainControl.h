@@ -63,6 +63,10 @@
 #define DELAY_14S                       1400
 #define DELAY_15S                       1500
 #define DELAY_16S                       1600
+#define DELAY_20S                       2000
+#define DELAY_21S                       2100
+#define DELAY_25S                       2500
+#define DELAY_26S                       2600
 #define DELAY_30S                       3000
 
 
@@ -116,6 +120,7 @@ typedef struct COUNT
   uint32_t power;              //用于180160DW风扇全速运行时，百叶反转时，FG信号异常，等待电机停止后再启动的软件处理。
   uint32_t motorCMD510BRunStaA;   //记录CMD510B直流无刷电机的百叶在一个检测周期内合理电流值的总数量
   uint32_t motorCMD510BRunStaB;   //记录CMD510B直流无刷电机的百叶在一个检测周期内合理电流值的总数量
+  uint32_t motorCMD510BRunStaC;   //记录CMD510B直流无刷电机的百叶在一个检测周期内合理电流值的总数量
 }stCOUNT;
 
 typedef struct DOOR_STA
@@ -144,8 +149,10 @@ typedef struct DOOR_STA
   int32_t motorCurNum[MOTOR_BDC_NUMBER_MAX];       //记录直流有刷电机运动过程中电流超过阈值的次数，对于没有FG信号的电机可以通过此方式确定电机旋转角度的近似值。
   int32_t nowDoorPositionCMD510BMA;  //CMD510B for DC brushless motor  A 
   int32_t nowDoorPositionCMD510BMB;  //CMD510B for DC brushless motor  B 
+  int32_t nowDoorPositionCMD510BMC;  //CMD510B for DC brushless motor  B 
   int32_t doorPositionFinalA;
   int32_t doorPositionFinalB;
+  int32_t doorPositionFinalC;
 
 }stDOOR_STA;
 
@@ -203,6 +210,7 @@ extern __IO uint32_t mOSTM16_SysTick20us_K;
 extern __IO uint32_t mOSTM16_SysTick10ms_K;
 extern __IO uint32_t mOSTM16_SysTick20us_CMD510B_M_A;
 extern __IO uint32_t mOSTM16_SysTick20us_CMD510B_M_B;
+extern __IO uint32_t mOSTM16_SysTick20us_CMD510B_M_C;
 extern int mDoorRunNumSta;
 extern stMACHINE_MDBUS_STA mMachineModbusSta;
 // extern uint16_t mMotorCurTemp[1024];

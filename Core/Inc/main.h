@@ -79,8 +79,8 @@ void Error_Handler(void);
 #define FAN_CURRENT_GPIO_Port GPIOA
 #define HEATER_CTRL_Pin GPIO_PIN_7
 #define HEATER_CTRL_GPIO_Port GPIOA
-#define FAN_CTRL_Pin GPIO_PIN_0
-#define FAN_CTRL_GPIO_Port GPIOB
+#define AC_FAN_CTRL_Pin GPIO_PIN_0
+#define AC_FAN_CTRL_GPIO_Port GPIOB
 #define MOTOR_CURRENT1_Pin GPIO_PIN_1
 #define MOTOR_CURRENT1_GPIO_Port GPIOB
 #define MOTOR_CURRENT2_Pin GPIO_PIN_2
@@ -104,6 +104,8 @@ void Error_Handler(void);
 #define OFF_STATE1_EXTI_IRQn EXTI4_15_IRQn
 #define I2C_SCL_Pin GPIO_PIN_9
 #define I2C_SCL_GPIO_Port GPIOA
+#define DC_FAN_CTRL_Pin GPIO_PIN_6
+#define DC_FAN_CTRL_GPIO_Port GPIOC
 #define I2C_SDA_Pin GPIO_PIN_10
 #define I2C_SDA_GPIO_Port GPIOA
 #define DIR1_Pin GPIO_PIN_11

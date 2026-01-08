@@ -43,7 +43,7 @@ typedef struct ADC_SAMPLING
 {
   int32_t DivVal[ADC_DIVISION_VAL];     //采样值数组
   int32_t SumVal;                       //采样值和值
-  int32_t NowVal;                       //运算后的真实的有效值
+  int32_t CurrentVal;                       //运算后的真实的有效值
   int32_t ThresholdMax;                 //阈值
   int32_t ThresholdMin;                 //阈值
   int32_t MaxTempRun;                   //运行状态下最大值

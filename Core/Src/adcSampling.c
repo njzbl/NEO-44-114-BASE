@@ -27,6 +27,7 @@
 
 /*****************************************************************************************************************************
  * Typedef Definition
+ 
  ****************************************************************************************************************************/
 
 #define MOTOR_PUSH_CURRENT              875     //875 = 1342mA ;  700 = 1074mA ;
@@ -60,47 +61,47 @@
 //                                     440 ,428 ,416 ,405 ,395 ,384 ,374 ,364 ,355 ,345 ,
 //                                     337 };
 
-// const uint32_t NTC_10K_B_3950[181] = {  //CMFB103F3950FANT   0805_10K_3950  风华
-//         583542 ,554647 ,526968 ,500480 ,475159 ,450974 ,427897 ,405892 ,384927 ,364967 ,
-//         345975 ,327915 ,310751 ,294448 ,278969 ,264279 ,250344 ,237130 ,224603 ,212733 ,
-//         201487 ,190836 ,180750 ,171201 ,162163 ,153610 ,145516 ,137858 ,130614 ,123761 ,
-//         117280 ,111149 ,105351 ,99867  ,94681  ,89776  ,85137  ,80750  ,76600  ,72676  ,
-//         68963  ,65451  ,62129  ,58986  ,56012  ,53198  ,50534  ,48013  ,45627  ,43368  ,
-//         41229  ,39204  ,37285  ,35468  ,33747  ,32116  ,30570  ,29105  ,27716  ,26399  ,
-//         25150  ,23965  ,22842  ,21776  ,20764  ,19783  ,18892  ,18026  ,17204  ,16423  ,
-//         15681  ,14976  ,14306  ,13669  ,13063  ,12487  ,11939  ,11418  ,10921  ,10449  ,
-//         10000  ,9571   ,9164   ,8775   ,8405   ,8052   ,7716   ,7396   ,7090   ,6798   ,
-//         6520   ,6255   ,6002   ,5760   ,5529   ,5309   ,5098   ,4897   ,4704   ,4521   ,
-//         4345   ,4177   ,4016   ,3863   ,3716   ,3588   ,3440   ,3311   ,3188   ,3069   ,
-//         2956   ,2848   ,2744   ,2644   ,2548   ,2457   ,2369   ,2284   ,2204   ,2126   ,
-//         2051   ,1980   ,1911   ,1845   ,1782   ,1721   ,1663   ,1606   ,1552   ,1500   ,
-//         1450   ,1402   ,1356   ,1312   ,1269   ,1228   ,1188   ,1150   ,1113   ,1078   ,
-//         1044   ,1011   ,979    ,948    ,919    ,891    ,863    ,837    ,811    ,787    ,
-//         763    ,740    ,718    ,697    ,676    ,657    ,637    ,619    ,601    ,584    ,
-//         567    ,551    ,535    ,520    ,505    ,491    ,477    ,464    ,451    ,439    ,
-//         427    ,415    ,404    ,393    ,383    ,373    ,363    ,353    ,344    ,335    ,
-//         326};
+const uint32_t NTC_10K_B_3950[181] = {  //CMFB103F3950FANT   0805_10K_3950  风华
+        583542 ,554647 ,526968 ,500480 ,475159 ,450974 ,427897 ,405892 ,384927 ,364967 ,
+        345975 ,327915 ,310751 ,294448 ,278969 ,264279 ,250344 ,237130 ,224603 ,212733 ,
+        201487 ,190836 ,180750 ,171201 ,162163 ,153610 ,145516 ,137858 ,130614 ,123761 ,
+        117280 ,111149 ,105351 ,99867  ,94681  ,89776  ,85137  ,80750  ,76600  ,72676  ,
+        68963  ,65451  ,62129  ,58986  ,56012  ,53198  ,50534  ,48013  ,45627  ,43368  ,
+        41229  ,39204  ,37285  ,35468  ,33747  ,32116  ,30570  ,29105  ,27716  ,26399  ,
+        25150  ,23965  ,22842  ,21776  ,20764  ,19783  ,18892  ,18026  ,17204  ,16423  ,
+        15681  ,14976  ,14306  ,13669  ,13063  ,12487  ,11939  ,11418  ,10921  ,10449  ,
+        10000  ,9571   ,9164   ,8775   ,8405   ,8052   ,7716   ,7396   ,7090   ,6798   ,
+        6520   ,6255   ,6002   ,5760   ,5529   ,5309   ,5098   ,4897   ,4704   ,4521   ,
+        4345   ,4177   ,4016   ,3863   ,3716   ,3588   ,3440   ,3311   ,3188   ,3069   ,
+        2956   ,2848   ,2744   ,2644   ,2548   ,2457   ,2369   ,2284   ,2204   ,2126   ,
+        2051   ,1980   ,1911   ,1845   ,1782   ,1721   ,1663   ,1606   ,1552   ,1500   ,
+        1450   ,1402   ,1356   ,1312   ,1269   ,1228   ,1188   ,1150   ,1113   ,1078   ,
+        1044   ,1011   ,979    ,948    ,919    ,891    ,863    ,837    ,811    ,787    ,
+        763    ,740    ,718    ,697    ,676    ,657    ,637    ,619    ,601    ,584    ,
+        567    ,551    ,535    ,520    ,505    ,491    ,477    ,464    ,451    ,439    ,
+        427    ,415    ,404    ,393    ,383    ,373    ,363    ,353    ,344    ,335    ,
+        326};
 
-const uint32_t NTC_10K_B_3950[181] = {  //   MF58-103F 3950       0805_10K_3950  南京时恒
-        1399250,1172570, 999260, 864178, 757035, 670669, 600002, 541371, 492090, 450165, 
-        414092, 382723, 355176, 330764, 308947, 289300, 271480, 255217, 240290, 226520, 
-        213761, 201893, 190818, 180452, 170728, 161587, 152979, 144862, 137201, 129963, 
-        123120, 116647, 110522, 104725,  99237,  94042,  89123,  84467,  80059,  75886,  
-        71937,  68199,  64662,  61316,  58150,  55155,  52321,  49641,  47107,  44709,  
-        42442,  40298,  38270,  36352,  34537,  32371,  31198,  29662,  28208,  26833,  
-        25531,  24299,  23133,  22028,  20982,  19893,  19052,  18162,  17318,  16518,  
-        15760,  15040,  14357,  13710,  13095,  12511,  11956,  11429,  10928,  10452,  
-        10000,  9569,   9160,   8770,   8399,   8046,   7710,   7389,   7084,   6793,   
-        6516,   6251,   5999,   5758,   5529,   5309,   5100,   4900,   4709,   4526,   
-        4352,   4185,   4026,   3873,   3727,   3588,   3454,   3326,   3203,   3086,   
-        2973,   2866,   2762,   2663,   2568,   2477,   2390,   2306,   2226,   2148,   
-        2074,   2003,   1935,   1869,   1806,   1745,   1687,   1631,   1577,   1525,   
-        1475,   1427,   1381,   1337,   1294,   1253,   1213,   1175,   1138,   1103,   
-        1065,   1035,   1004,   973,    944,    915,    888,    861,    835,    811,    
-        787,    764,    742,    720,    699,    677,    660,    641,    623,    583,    
-        567,    551,    535,    520,    506,    492,    479,    466,    453,    441,    
-        429,    417,    406,    396,    385,    375,    365,    356,    347,    338,    
-        329};
+// const uint32_t NTC_10K_B_3950[181] = {  //   MF58-103F 3950       0805_10K_3950  南京时恒
+//         1399250,1172570, 999260, 864178, 757035, 670669, 600002, 541371, 492090, 450165, 
+//         414092, 382723, 355176, 330764, 308947, 289300, 271480, 255217, 240290, 226520, 
+//         213761, 201893, 190818, 180452, 170728, 161587, 152979, 144862, 137201, 129963, 
+//         123120, 116647, 110522, 104725,  99237,  94042,  89123,  84467,  80059,  75886,  
+//         71937,  68199,  64662,  61316,  58150,  55155,  52321,  49641,  47107,  44709,  
+//         42442,  40298,  38270,  36352,  34537,  32371,  31198,  29662,  28208,  26833,  
+//         25531,  24299,  23133,  22028,  20982,  19893,  19052,  18162,  17318,  16518,  
+//         15760,  15040,  14357,  13710,  13095,  12511,  11956,  11429,  10928,  10452,  
+//         10000,  9569,   9160,   8770,   8399,   8046,   7710,   7389,   7084,   6793,   
+//         6516,   6251,   5999,   5758,   5529,   5309,   5100,   4900,   4709,   4526,   
+//         4352,   4185,   4026,   3873,   3727,   3588,   3454,   3326,   3203,   3086,   
+//         2973,   2866,   2762,   2663,   2568,   2477,   2390,   2306,   2226,   2148,   
+//         2074,   2003,   1935,   1869,   1806,   1745,   1687,   1631,   1577,   1525,   
+//         1475,   1427,   1381,   1337,   1294,   1253,   1213,   1175,   1138,   1103,   
+//         1065,   1035,   1004,   973,    944,    915,    888,    861,    835,    811,    
+//         787,    764,    742,    720,    699,    677,    660,    641,    623,    583,    
+//         567,    551,    535,    520,    506,    492,    479,    466,    453,    441,    
+//         429,    417,    406,    396,    385,    375,    365,    356,    347,    338,    
+//         329};
 /*****************************************************************************************************************************
  * Static Local Functions Declaration
  ****************************************************************************************************************************/
@@ -120,6 +121,7 @@ __IO stADC_SAMPLING mVrefValAdc = {0};
 __IO uint32_t mPtMotorCurrentMax[30] = {0};
 __IO uint8_t mPtMotorCurrentCount[3] = {0};
 __IO uint8_t mPtMotorPushCurrentCount[3] = {0};
+uint32_t mMotorMaxCurrentTime[3] = {0};
 int32_t mFanAdcAvg[10] = {0};
 uint8_t mFanAdcAvgNum = 0;
 void ClsArray(uint8_t* buf, uint32_t size)
@@ -177,7 +179,7 @@ void adcSampling(void)
                 adcSum += (curVal[i] - adcAvg);//adcSum += ((curVal[i] - adcAvg) * (curVal[i] - adcAvg));
             }
         }
-    mFanAdc.NowVal = adcSum;
+    mFanAdc.CurrentVal = adcSum;
 #if (FAN_MODEL == FAN_MODEL_AC_75W)
     //这个值是NEO自己的风机，福佑的风机值还要再测试。用于华为项目，华为和阳光电源mFanAdc.ThresholdMin = 10000;
     mFanAdc.ThresholdMin = 2000;   //风扇不转时150,  风扇转时6000+   //mFanAdc.ThresholdMin = 1000000;          //实际电流约30000~40000
@@ -207,7 +209,7 @@ void adcSampling(void)
         // printf("adcAvg,adcSum,MinB,MaxB,S,S:%d,%d  %d,%d,%d,%d\r\n",adcAvg,adcSum,mFanAdc.MinTempRun,mFanAdc.MaxTempRun,mFanAdc.MinTempStop,mFanAdc.MaxTempStop);
         // printf("adcAvg,adcSum:%d,%d\r\n",adcAvg,adcSum);
         int32_t nowVal = 0,nowValTemp = 0;
-        nowValTemp = ((mFanAdc.NowVal * 9) / 1000);        //NowVal:采集数据有效值 单位: mA
+        nowValTemp = ((mFanAdc.CurrentVal * 9) / 1000);        //CurrentVal:采集数据有效值 单位: mA
         if(mFanAdcAvgNum > 9) {
             mFanAdcAvgNum = 0;
         }
@@ -222,7 +224,7 @@ void adcSampling(void)
             mMachineModbusSta.fanCurrent = nowVal - 20;  //有20mA 的基准偏差
         else
             mMachineModbusSta.fanCurrent = 0;
-        //  printf("fan current:%d mA %d\r\n",nowVal,mFanAdc.NowVal);
+        //  printf("fan current:%d mA %d\r\n",nowVal,mFanAdc.CurrentVal);
         mFanAdc.CurFlag = 1;                //CurFlag：采集数据有效值标识
     }
 //     if(mTemplateAdc.SamplingFalg == 1) {
@@ -236,8 +238,8 @@ void adcSampling(void)
 //         }
 //         mTemplateAdc.DivNum = 0; //新的一轮采集开始
 //         mTemplateAdc.SamplingFalg = 0;   //清除采集完成标识
-//         mTemplateAdc.NowVal = tempSum / ADC_DIVISION_VAL;
-//         mMachineModbusSta.temperature = mTemplateAdc.NowVal + 273;
+//         mTemplateAdc.CurrentVal = tempSum / ADC_DIVISION_VAL;
+//         mMachineModbusSta.temperature = mTemplateAdc.CurrentVal + 273;
 //         mTemplateAdc.ThresholdMin = 2000;
 // #if (MOTOR_MODEL == CHENXIN_5840_3650)
 //         mTemplateAdc.ThresholdMin = 30;   //mMotorAdcAvgThreshold = 2000;
@@ -252,11 +254,18 @@ void adcSampling(void)
             for(int i = 0;i <ADC_DIVISION_VAL;i++) {
                 curVal[i] = mMotorAdc[j].DivVal[i] * 3300 >> 12;
                 adcPower[j] += curVal[i];
-
-                if(mMotorAdc[j].DivVal[i] > mPtMotorCurrentMax[j] && (mCount.motorCMD510BRunStaA > 50 || mCount.motorCMD510BRunStaB > 50)) {
+#if(MOTOR_MODEL == DLK_TG_60W)
+                // if(mMotorAdc[j].DivVal[i] > mPtMotorCurrentMax[j]) {
+                //     mPtMotorCurrentMax[j] = mMotorAdc[j].DivVal[i];
+                //     tempflag[j] = 1;
+                // }
+#endif
+#if(MOTOR_MODEL == CHENXIN_5840_3650)
+                if(mMotorAdc[j].DivVal[i] > mPtMotorCurrentMax[j] && (mCount.motorCMD510BRunStaA > 50 || mCount.motorCMD510BRunStaB > 50 || mCount.motorCMD510BRunStaC > 50)) {
                     mPtMotorCurrentMax[j] = mMotorAdc[j].DivVal[i];
                     tempflag[j] = 1;
                 }
+#endif
             }
             // if((mKeySta.nowKeySta == CLOSE_DOOR && adcPower[j] > 5000) || (mKeySta.nowKeySta == OPEN_DOOR && adcPower[j] > 10000)) {
             //     if(j == 0) {// if(mKeySta.nowKeySta == CLOSE_DOOR && j == 0) {
@@ -270,35 +279,39 @@ void adcSampling(void)
             //         }
             //     }
             // }
-            if((adcPower[j] / ADC_DIVISION_VAL) >= MOTOR_PUSH_CURRENT_AVG) {
-                if(j == 0) {
-                    if(mCount.motorCMD510BRunStaA > 10) {
-                        HAL_GPIO_WritePin(MOTOR_PWR_CTRL1_GPIO_Port, MOTOR_PWR_CTRL1_Pin, GPIO_PIN_RESET);
-                        // printf("mCount.motorCMD510BRunStaA = %d adcPower[%d] = %d\r\n",mCount.motorCMD510BRunStaA,j, (adcPower[j] / ADC_DIVISION_VAL));
-                    }
-                }
-                else if(j == 1) {
-                    if(mCount.motorCMD510BRunStaB > 10) {
-                        HAL_GPIO_WritePin(MOTOR_PWR_CTRL2_GPIO_Port, MOTOR_PWR_CTRL2_Pin, GPIO_PIN_RESET);
-                        // printf("mCount.motorCMD510BRunStaB = %d adcPower[%d] = %d\r\n",mCount.motorCMD510BRunStaB,j, (adcPower[j] / ADC_DIVISION_VAL));
-                    }
-                }
-            }
+
+
+            // if((adcPower[j] / ADC_DIVISION_VAL) >= MOTOR_PUSH_CURRENT_AVG) {
+            //     if(j == 0) {
+            //         if(mCount.motorCMD510BRunStaA > 10) {
+            //             HAL_GPIO_WritePin(MOTOR_PWR_CTRL1_GPIO_Port, MOTOR_PWR_CTRL1_Pin, GPIO_PIN_RESET);
+            //             // printf("mCount.motorCMD510BRunStaA = %d adcPower[%d] = %d\r\n",mCount.motorCMD510BRunStaA,j, (adcPower[j] / ADC_DIVISION_VAL));
+            //         }
+            //     }
+            //     else if(j == 1) {
+            //         if(mCount.motorCMD510BRunStaB > 10) {
+            //             HAL_GPIO_WritePin(MOTOR_PWR_CTRL2_GPIO_Port, MOTOR_PWR_CTRL2_Pin, GPIO_PIN_RESET);
+            //             // printf("mCount.motorCMD510BRunStaB = %d adcPower[%d] = %d\r\n",mCount.motorCMD510BRunStaB,j, (adcPower[j] / ADC_DIVISION_VAL));
+            //         }
+            //     }
+            // }
+
+
             mMotorAdc[j].ThresholdMin = 120; //150mA(30W 电机空载的时候基本都大于150mA ， 启动电流会达到1680mA ) ,电机停止时电流 为12mA左右。所以阈值定位150mA
                                              //     (60W 电机空载的时候基本都大于300mA ， 启动电流会达到1960mA )
 
                                              
             // mMotorAdc[j].ThresholdMin = 50; //50mA
             // ((adcPower[j] << 2) / 105)  这个公式正确 ，实测800mA电流误差小于 12% ,  信号毛刺通常在20mA,去毛刺阈值应设定为40   2025-07-16
-            mMotorAdc[j].NowVal = ((adcPower[j] << 2) / 105); //单位:mA  (adcPower[j] / ADC_DIVISION_VAL) / (21 * 0.025)  = ((adcPower[j] << 2) / 105)   //mMotorAdc[j].NowVal = ((adcPower[j] / ADC_DIVISION_VAL) * 800 / 523); //单位:mA
-            // mMotorAdc[j].NowVal = (adcPower[j] / ADC_DIVISION_VAL) * 1000 / (21 * 25);
-            // if(mMotorAdc[j].NowVal > mPtMotorCurrentMax[j])
-            //     mPtMotorCurrentMax[j] = mMotorAdc[j].NowVal;
-            // if(mMotorAdc[j].NowVal < 40) {  //去毛刺，实际电机启动时电流值一定大于40mA
-            //     mMotorAdc[j].NowVal = 0;
+            mMotorAdc[j].CurrentVal = ((adcPower[j] << 2) / 105); //单位:mA  (adcPower[j] / ADC_DIVISION_VAL) / (21 * 0.025)  = ((adcPower[j] << 2) / 105)   //mMotorAdc[j].CurrentVal = ((adcPower[j] / ADC_DIVISION_VAL) * 800 / 523); //单位:mA
+            // mMotorAdc[j].CurrentVal = (adcPower[j] / ADC_DIVISION_VAL) * 1000 / (21 * 25);
+            // if(mMotorAdc[j].CurrentVal > mPtMotorCurrentMax[j])
+            //     mPtMotorCurrentMax[j] = mMotorAdc[j].CurrentVal;
+            // if(mMotorAdc[j].CurrentVal < 40) {  //去毛刺，实际电机启动时电流值一定大于40mA
+            //     mMotorAdc[j].CurrentVal = 0;
             // }
 
-            // mMotorAdc[j].NowVal = ((adcPower[j] * 20) / 61) / 5;   // mMotorAdc[j].NowVal 单位:mA
+            // mMotorAdc[j].CurrentVal = ((adcPower[j] * 20) / 61) / 5;   // mMotorAdc[j].CurrentVal 单位:mA
             // if(j == 0 && mPtMotorCurrentMax[j] > 2500 && tempflag[j] == 1) {
             //     printf("mMotorAdc[%d] = %d,%d,%d,%d,%d,  %d,%d,%d,%d,%d  \r\n",j, curVal[0], curVal[1], curVal[2], curVal[3], curVal[4], curVal[5], curVal[6], curVal[7], curVal[8], curVal[9]);
             //     printf("mMotorAdc[%d] = %d,%d,%d,%d,%d,  %d,%d,%d,%d,%d  \r\n",j, curVal[10], curVal[11], curVal[12], curVal[13], curVal[14], curVal[15], curVal[16], curVal[17], curVal[18], curVal[19]);
@@ -306,9 +319,51 @@ void adcSampling(void)
             //     printf("mMotorAdc[%d] = %d,%d,%d,%d,%d,  %d,%d,%d,%d,%d  \r\n",j, curVal[30], curVal[31], curVal[32], curVal[33], curVal[34], curVal[35], curVal[36], curVal[37], curVal[38], curVal[39]);
             //     printf("mMotorAdc[%d] = %d,%d,%d,%d,%d,  %d,%d,%d,%d,%d  \r\n",j, curVal[40], curVal[41], curVal[42], curVal[43], curVal[44], curVal[45], curVal[46], curVal[47], curVal[48], curVal[49]);
             // }
+
+            
+#if(MOTOR_MODEL == DLK_TG_60W)
+                if(mMotorAdc[j].CurrentVal > mPtMotorCurrentMax[j]) {
+                    mPtMotorCurrentMax[j] = mMotorAdc[j].CurrentVal;
+                    tempflag[j] = 1;
+                }
+#endif
+
+            uint32_t threshold = 8000,countStepMotor = 0;
+#if(MOTOR_MODEL == DLK_TG_60W)          //25°C 电机推出时完全堵转，mMotorAdc[j].CurrentVal 瞬间最大值3275，然后逐渐降低最后一直稳定在2800左右，此时稳压电源读数为：2.6 ~ 2.8A ，在低温-30°C时小裴测试稳压电源读数2.9A。 -40°C时 串口监测到mMotorAdc[j].CurrentVal 长时间达到：4000+
+            if(mNtc10KAdc.CurrentVal > -10) {
+                threshold = 2800;
+            }
+            else {
+                threshold = 7500;
+            }
+            countStepMotor = mDoorSta.motorCurNum[j];
+#endif
+#if(MOTOR_MODEL == WG_TG)
+            threshold = 2000;
+            countStepMotor = mDoorSta.motorCurNum[j];
+#endif
+#if(MOTOR_MODEL == CHENXIN_5840_3650)
+            threshold = 1600;
+            countStepMotor = mCount.motorCMD510BRunStaA;
+#endif
+            if(mMotorAdc[j].CurrentVal >= threshold) {
+                mMotorMaxCurrentTime[j]++;
+                if(j == 0) {
+                    if(countStepMotor > 10 && mMotorMaxCurrentTime[0] > 500) {  //压紧胶条时间长度大于500ms
+                        HAL_GPIO_WritePin(MOTOR_PWR_CTRL1_GPIO_Port, MOTOR_PWR_CTRL1_Pin, GPIO_PIN_RESET);
+                        // printf("mCount.motorCMD510BRunStaA = %d adcPower[%d] = %d\r\n",mCount.motorCMD510BRunStaA,j, (adcPower[j] / ADC_DIVISION_VAL));
+                    }
+                }
+                else if(j == 1) {
+                    if(countStepMotor > 10 && mMotorMaxCurrentTime[1] > 500) {  //压紧胶条时间长度大于500ms
+                        HAL_GPIO_WritePin(MOTOR_PWR_CTRL2_GPIO_Port, MOTOR_PWR_CTRL2_Pin, GPIO_PIN_RESET);
+                        // printf("mCount.motorCMD510BRunStaB = %d adcPower[%d] = %d\r\n",mCount.motorCMD510BRunStaB,j, (adcPower[j] / ADC_DIVISION_VAL));
+                    }
+                }
+            }
         }
-        // printf("---------mMotorAdc.NowVal = %d,%d,%d --------------\r\n", mMotorAdc[0].NowVal, mMotorAdc[1].NowVal, mMotorAdc[2].NowVal);
-        // printf("---------mMotorAdc.NowVal = %d,%d,%d --------------\r\n", adcPower[0] / ADC_DIVISION_VAL, adcPower[1] / ADC_DIVISION_VAL, adcPower[2] / ADC_DIVISION_VAL);
+        // printf("---------mMotorAdc.CurrentVal = %d,%d,%d %d--------------\r\n", mMotorAdc[0].CurrentVal, mMotorAdc[1].CurrentVal, mMotorAdc[2].CurrentVal,mNtc10KAdc.CurrentVal);
+        // printf("---------mMotorAdc.CurrentVal = %d,%d,%d --------------\r\n", adcPower[0] / ADC_DIVISION_VAL, adcPower[1] / ADC_DIVISION_VAL, adcPower[2] / ADC_DIVISION_VAL);
         mMotorAdc[0].DivNum = 0; //新的一轮采集开始
         mMotorAdc[0].SamplingFalg = 0;   //清除采集完成标识
         mMotorAdc[0].CurFlag = 1;
@@ -321,9 +376,9 @@ void adcSampling(void)
             tempSum += curVal[i];
         }
         mPowerAdcB.ThresholdMin = 1100;     //1800mV 对应 R1 = 20K ; 1100mV 对应 R1 = 47K (DC24V 正常供电时 1220mV ； DC20V 供电时 1060mV ； DC18V 供电时 980mV )
-        mPowerAdcB.NowVal = (tempSum / ADC_DIVISION_VAL);
-        // mMachineModbusSta.Ntctemperature = mNtc10KAdc.NowVal + 273;
-        // printf("mPowerAdcB.NowVal = %d\r\n", mPowerAdcB.NowVal);
+        mPowerAdcB.CurrentVal = (tempSum / ADC_DIVISION_VAL);
+        // mMachineModbusSta.Ntctemperature = mNtc10KAdc.CurrentVal + 273;
+        // printf("mPowerAdcB.CurrentVal = %d\r\n", mPowerAdcB.CurrentVal);
         mPowerAdcB.DivNum = 0; //新的一轮采集开始
         mPowerAdcB.SamplingFalg = 0;   //清除采集完成标识
         mPowerAdcB.CurFlag = 1;
@@ -338,15 +393,15 @@ void adcSampling(void)
         }
         mNtc10KAdc.ThresholdMin = 150;
         adcAvg = (tempSum / ADC_DIVISION_VAL);
-        tempval = (4700 * (3300 - adcAvg)) / adcAvg; 
+        tempval = (10000 * adcAvg) / (3300 - adcAvg);   //tempval = (4700 * (3300 - adcAvg)) / adcAvg; 
         int i;
         for(i = 0; i < sizeof(NTC_10K_B_3950) / sizeof(uint32_t); i++) {
             if(tempval >= NTC_10K_B_3950[i]) {
                 break;
             }
         }
-        mNtc10KAdc.NowVal = i - 55;
-        mMachineModbusSta.Ntctemperature = mNtc10KAdc.NowVal + 273;
+        mNtc10KAdc.CurrentVal = i - 55;
+        mMachineModbusSta.Ntctemperature = mNtc10KAdc.CurrentVal + 273;
         mNtc10KAdc.DivNum = 0; //新的一轮采集开始
         mNtc10KAdc.SamplingFalg = 0;   //清除采集完成标识
         mNtc10KAdc.CurFlag = 1;

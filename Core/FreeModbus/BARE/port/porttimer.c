@@ -39,9 +39,11 @@ __IO uint32_t mOSTM16_SysTick20us_K = 0;
 __IO uint32_t mOSTM16_SysTick10ms_K = 0;
 __IO uint32_t mOSTM16_SysTick20us_CMD510B_M_A = 0;
 __IO uint32_t mOSTM16_SysTick20us_CMD510B_M_B = 0;
+__IO uint32_t mOSTM16_SysTick20us_CMD510B_M_C = 0;
 __IO uint32_t mAddFgVal = 0;
 __IO uint8_t mDebugFlagPowerDownCMD510BA[5];
 __IO uint8_t mDebugFlagPowerDownCMD510BB[5];
+__IO uint8_t mDebugFlagPowerDownCMD510BC[5];
 
 #define THRESHOLD_LEN                   30
 #define THRESHOLD_LEN_DEC_1          (THRESHOLD_LEN - 1)
@@ -116,6 +118,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		mOSTM16_SysTick20us_K++;
 		mOSTM16_SysTick20us_CMD510B_M_A++;
 		mOSTM16_SysTick20us_CMD510B_M_B++;
+		mOSTM16_SysTick20us_CMD510B_M_C++;
 
 		//将步进电机控制放在中断函数中，调高定时器中断的优先级
 		adcCallback();
@@ -186,6 +189,40 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				mOSTM16_SysTick20us_CMD510B_M_B = 0;
 				if(mKeySta.nowKeySta == CLOSE_DOOR) {		// 堵转停止说明是到了关门极限位置，如果是门被卡住，则有漏洞，但不加此逻辑结构件会出现百叶越开越小的问题
 					mDoorSta.nowDoorPositionCMD510BMB = 0;
+				}
+			}
+			
+//>>>>>>>>>>>>>>>>>>>  中途提高驱动力的处理  >>>>>>>>>>>>>>>>>>>
+
+            if(mKeySta.nowKeySta == OPEN_DOOR) {
+                if(mCount.motorCMD510BRunStaC < (FARTHEST_POSITION_DC_B_MOTOR - 100))
+                    mAddFgVal = 100;    //庆城是400关紧  600动作，所以 mAddFgVal = 200;   增强齿轮是500关紧 800动作，所以 mAddFgVal = 300;
+                else
+                    mAddFgVal = 0;
+            }
+            else {
+                if(mCount.motorCMD510BRunStaC < 500 && mDoorSta.nowDoorPositionCMD510BMC > 100)
+                    mAddFgVal = 100;    //庆城是400关紧  600动作，所以 mAddFgVal = 200;   增强齿轮是500关紧 800动作，所以 mAddFgVal = 300;
+                else 
+                    mAddFgVal = 0;
+            }
+
+//<<<<<<<<<<<<<<<<<<<  中途提高驱动力的处理  <<<<<<<<<<<<<<<<<<<
+			if((mCount.motorCMD510BRunStaC >= THRESHOLD_LEN_DEC_1 && mOSTM16_SysTick20us_CMD510B_M_C >= (FG_THRESHOLD[THRESHOLD_LEN_DEC_1] + mAddFgVal))
+            || (mOSTM16_SysTick20us_CMD510B_M_C >= (FG_THRESHOLD[mCount.motorCMD510BRunStaC] + mAddFgVal) && (mCount.motorCMD510BRunStaC < THRESHOLD_LEN_DEC_1 && mCount.motorCMD510BRunStaC > 0))
+            || (mCount.motorCMD510BRunStaC == 0 && mOSTM16_SysTick20us_CMD510B_M_C > 1300)) {	//power up 25ms，FG is 0，
+
+                if(mDebugFlagPowerDownCMD510BC[0] == 0) {
+#if (MOTOR_MODEL == CHENXIN_5840_3650)
+				    setBDCMotorStop(2);  //   ZBL  20250418
+#endif
+                    mDebugFlagPowerDownCMD510BC[0] = 1;
+                    // printf("PowerDownShadesMotorBBB()  mDebugFlagPowerDownB[0] = 1  mCount.motorCMD510BRunStaB = %d\r\n",mCount.motorCMD510BRunStaB);
+                }
+
+				mOSTM16_SysTick20us_CMD510B_M_C = 0;
+				if(mKeySta.nowKeySta == CLOSE_DOOR) {		// 堵转停止说明是到了关门极限位置，如果是门被卡住，则有漏洞，但不加此逻辑结构件会出现百叶越开越小的问题
+					mDoorSta.nowDoorPositionCMD510BMC = 0;
 				}
 			}
 		}

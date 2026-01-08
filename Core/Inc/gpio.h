@@ -67,7 +67,8 @@ void MX_GPIO_Init(void);
 /* USER CODE BEGIN Prototypes */
 
 void setLED0(uint8_t sta);
-void setFanCtrl(uint8_t sta);
+void setACFanCtrl(uint8_t sta);
+void setDCFanCtrl(uint8_t sta);
 void setFanPWM(uint8_t sta);
 void setSysSta(uint8_t sta);
 void setSysErr(uint8_t sta);
