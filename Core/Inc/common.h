@@ -9,34 +9,39 @@ extern "C" {
 
 #define PROTECTION_DISABLED                 0
 #define PROTECTION_ENABLED                  1
-#define MACHIME_POWER_LOSS_PROTECTION       PROTECTION_DISABLED
+#define MACHINE_POWER_LOSS_DETECT           PROTECTION_DISABLED                     //系统掉电百叶自复位功能
 
 #define DETECT_FOREIGN_DISABLED             0
 #define DETECT_FOREIGN_ENABLED              1
-#define MACHIME_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED
+#define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //卡异物检测功能
 
 #define THIRD_MOTOR_DISABLED                0
 #define THIRD_MOTOR_ENABLED                 1
-#define MACHIME_THIRD_MOTOR                 THIRD_MOTOR_DISABLED
+#define MACHINE_THIRD_MOTOR                 THIRD_MOTOR_DISABLED                    //使用 DC_FAN 通道驱动第三个 DW 电机
+
+#define DEBUG_ENABLED                       1
+#define DEBUG_DISABLED                      0
+#define MACHINE_DEBUG                       DEBUG_DISABLED                           //控制调试语句
 
 //风机功率设定，只能选择一种风机
 #define FAN_MODEL_AC_75W                  1
 #define FAN_MODEL_DC_100W                 2
 
-#define DLK_TG_60W                      0       //迪洛克推杆电机
+#define DLK_TG_60W                      0       //迪洛克推杆电机，内部没有堵转电流保护
 #define CHENXIN_5840_3650               1       //辰鑫蜗涡轮杆电机 400350DW
 #define TZC36_5840_3650                 2       //万融蜗涡轮杆电机
-#define DLK_YLSZ23                      3       //迪洛克防爆款fg推杆电机
-#define DLK_YLSZ23_FB                   4       //迪洛克防爆款FB推杆电机,只反馈关紧百叶（电机完全伸出）的电平信号
-#define WG_TG                           5       //微光推杆电机
+#define DLK_YLSZ23                      3       //迪洛克防爆款fg推杆电机，内部没有堵转电流保护
+#define DLK_YLSZ23_FB                   4       //迪洛克防爆款FB推杆电机,只反馈关紧百叶（电机完全伸出）的电平信号，内部没有堵转电流保护
+#define WG_TG                           5       //微光推杆电机，内部没有堵转电流保护
+#define G_ROCH_D3Ex                     6       //基洛克防爆推杆电机 ，内部有堵转电流保护
 #define MOTOR_MODEL                     CHENXIN_5840_3650
 
 #if (MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_YLSZ23_FB)
-#define MAX_CURRENT_MOTOR               8000        //9A     这里的阈值8000为暂定值，需要测试
+#define MAX_CURRENT_MOTOR               2625        //5A     这里的阈值8000为暂定值，需要测试
 
 #endif
-#if (MOTOR_MODEL == DLK_TG_60W || MOTOR_MODEL == TZC36_5840_3650 || MOTOR_MODEL == WG_TG)
-#define MAX_CURRENT_MOTOR               5000        //9A     这里的阈值5000为暂定值，需要测试
+#if (MOTOR_MODEL == DLK_TG_60W || MOTOR_MODEL == G_ROCH_D3Ex || MOTOR_MODEL == TZC36_5840_3650 || MOTOR_MODEL == WG_TG)
+#define MAX_CURRENT_MOTOR               2625        //5A     这里的阈值5000为暂定值，需要测试 //#define MAX_CURRENT_MOTOR               5000        //9A     这里的阈值5000为暂定值，需要测试
 
 #endif
 #if (MOTOR_MODEL == CHENXIN_5840_3650)
@@ -298,19 +303,10 @@ extern "C" {
 //>>>>>>>>>>>>>>>>以下是直流有刷推杆电机和福佑风机的电流参数表>>>>>>>>>>>>>>>>>
 
 
-#define DC_MOTOR0_MA		VALID               //PCB 位号 P5       //排风
-
-#if (MACHINE_MODE == MACHINE_HW_MODE || MACHINE_MODE == MACHINE_YGDY_MODE || MACHINE_MODE == MACHINE_NO_MODE)
-#define DC_MOTOR1_MA		VALID               //PCB 位号 P6      //进风
-
-#endif
-
-#if (MACHINE_MODE == MACHINE_HY_MODE)
-#define DC_MOTOR1_MA		INVALID               //PCB 位号 P10      //进风
-
-#endif
-#define DC_MOTOR2_MA		INVALID             //实际没有这个通道
-#define DC_MOTOR3_MA		INVALID             //实际没有这个通道
+#define DC_MOTOR0_MA		VALID                   //PCB 位号 P5       //排风
+#define DC_MOTOR1_MA		VALID                 //PCB 位号 P6       //进风
+#define DC_MOTOR2_MA		INVALID                 //实际没有这个通道
+#define DC_MOTOR3_MA		INVALID                 //实际没有这个通道
 
 
 

@@ -121,7 +121,12 @@ __IO stADC_SAMPLING mVrefValAdc = {0};
 __IO uint32_t mPtMotorCurrentMax[30] = {0};
 __IO uint8_t mPtMotorCurrentCount[3] = {0};
 __IO uint8_t mPtMotorPushCurrentCount[3] = {0};
-uint32_t mMotorMaxCurrentTime[3] = {0};
+#if(MACHINE_DEBUG == DEBUG_ENABLED)
+__IO uint16_t mMotorCurMaxTotal[2][40] = {0};               //测试代码需要的变量，正式程序中要屏蔽，减少堆的占用
+__IO uint16_t mMotorCurMaxNow[2][40] = {0};                 //测试代码需要的变量，正式程序中要屏蔽，减少堆的占用
+#endif
+uint32_t mMotorMaxCurrentTime[3] = {0};             		//大电流时FG信号最大持续时间
+
 int32_t mFanAdcAvg[10] = {0};
 uint8_t mFanAdcAvgNum = 0;
 void ClsArray(uint8_t* buf, uint32_t size)
@@ -158,9 +163,13 @@ void InitSampling(void)
 
 void adcSampling(void)
 {
-    uint32_t adcSum = 0,adcAvg = 0,tempflag[3] = 0;
+    uint32_t adcSum = 0,adcAvg = 0,tempflag[3] = {0};
     uint32_t adcPower[3] = {0};
     uint32_t curVal[ADC_DIVISION_VAL] = {0};
+    uint32_t maxCurThreshold[3] = {8000},motorRunAngle[3] = {0};
+    uint32_t motorMaxCurHoldTimeMsThreshold = 50; //ms
+    
+            
     if(mFanAdc.SamplingFalg == 1) {
         adcSum = 0;
         for(int i = 0;i <ADC_DIVISION_VAL;i++) {
@@ -321,43 +330,82 @@ void adcSampling(void)
             // }
 
             
-#if(MOTOR_MODEL == DLK_TG_60W)
-                if(mMotorAdc[j].CurrentVal > mPtMotorCurrentMax[j]) {
-                    mPtMotorCurrentMax[j] = mMotorAdc[j].CurrentVal;
-                    tempflag[j] = 1;
-                }
+#if(MOTOR_MODEL == DLK_TG_60W || MOTOR_MODEL == G_ROCH_D3Ex)
+                // if(mMotorAdc[j].CurrentVal > mPtMotorCurrentMax[j]) {
+                //     mPtMotorCurrentMax[j] = mMotorAdc[j].CurrentVal;
+                //     tempflag[j] = 1;
+                // }
+#endif
+#if(MOTOR_MODEL == G_ROCH_D3Ex)
+            maxCurThreshold[j] = 3500;                      //空载电流 200 ~ 300mA   堵转电流 2.0 ~ 3.0 A
+            motorRunAngle[j] = mDoorSta.motorCurNum[j];
+            motorMaxCurHoldTimeMsThreshold = 500;
 #endif
 
-            uint32_t threshold = 8000,countStepMotor = 0;
 #if(MOTOR_MODEL == DLK_TG_60W)          //25°C 电机推出时完全堵转，mMotorAdc[j].CurrentVal 瞬间最大值3275，然后逐渐降低最后一直稳定在2800左右，此时稳压电源读数为：2.6 ~ 2.8A ，在低温-30°C时小裴测试稳压电源读数2.9A。 -40°C时 串口监测到mMotorAdc[j].CurrentVal 长时间达到：4000+
             if(mNtc10KAdc.CurrentVal > -10) {
-                threshold = 2800;
+                maxCurThreshold[j] = 2000; //maxCurThreshold[j] = 2800;  //迪洛克常规款电机堵转时电流为2400 ~ 2850 左右，考虑个体差异性，取偏小值 2.4A ，持续500ms
             }
             else {
-                threshold = 7500;
+                maxCurThreshold[j] = 7500;
             }
-            countStepMotor = mDoorSta.motorCurNum[j];
+            motorRunAngle[j] = mDoorSta.motorCurNum[j];
+            motorMaxCurHoldTimeMsThreshold = 500;
+#endif
+#if(MOTOR_MODEL == DLK_YLSZ23_FB)
+            maxCurThreshold[j] = 2000;                      //待机电流0.04mA  空载 500 ~ 600mA   
+            motorRunAngle[j] = mDoorSta.motorCurNum[j];
+            motorMaxCurHoldTimeMsThreshold = 500;
 #endif
 #if(MOTOR_MODEL == WG_TG)
-            threshold = 2000;
-            countStepMotor = mDoorSta.motorCurNum[j];
+            maxCurThreshold[j] = 2000;
+            motorRunAngle[j] = mDoorSta.motorCurNum[j];
+            motorMaxCurHoldTimeMsThreshold = 500;
 #endif
 #if(MOTOR_MODEL == CHENXIN_5840_3650)
-            threshold = 1600;
-            countStepMotor = mCount.motorCMD510BRunStaA;
+            uint8_t countTemp = 0;
+            if(mNtc10KAdc.CurrentVal >= -20) {
+                motorMaxCurHoldTimeMsThreshold = 20;
+                maxCurThreshold[j] = 1600;                  //常温时，1600阈值跑50000W次电机齿轮没有坏。
+            }
+            else {
+                motorMaxCurHoldTimeMsThreshold = 20;
+                maxCurThreshold[j] = 1900; //maxCurThreshold = 1600;       //1600 常温可能可以，但是低温可能不够(常温和低温阈值参数可以分开)，会导致-30°C提前停止。实测-30°C整机实验，第一次开启百叶正常，再关闭百叶在45°时提前停止。可能是这里的问题。而且多台主板测试发现电流采样值差异挺大的，基本无法精确保护，只能放大这里的值，用于宽范围保护。
+            }
+            if(j == 0) {
+                motorRunAngle[0] = mCount.motorCMD510BRunStaA;
+#if(MACHINE_DEBUG == DEBUG_ENABLED)
+                countTemp = mCount.motorCMD510BRunStaA / 30;
+                if(mMotorCurMaxNow[j][countTemp] < mMotorAdc[j].CurrentVal)
+                    mMotorCurMaxNow[j][countTemp] = mMotorAdc[j].CurrentVal;
+                if(mMotorCurMaxTotal[j][countTemp] < mMotorAdc[j].CurrentVal)
+                    mMotorCurMaxTotal[j][countTemp] = mMotorAdc[j].CurrentVal;
 #endif
-            if(mMotorAdc[j].CurrentVal >= threshold) {
-                mMotorMaxCurrentTime[j]++;
+            }
+            else if(j == 1) {
+                motorRunAngle[1] = mCount.motorCMD510BRunStaB;
+#if(MACHINE_DEBUG == DEBUG_ENABLED)
+                countTemp = mCount.motorCMD510BRunStaB / 30;
+                if(mMotorCurMaxNow[j][countTemp] < mMotorAdc[j].CurrentVal)
+                    mMotorCurMaxNow[j][countTemp] = mMotorAdc[j].CurrentVal;
+                if(mMotorCurMaxTotal[j][countTemp] < mMotorAdc[j].CurrentVal)
+                    mMotorCurMaxTotal[j][countTemp] = mMotorAdc[j].CurrentVal;
+#endif
+
+            }
+#endif
+            if(mMotorAdc[j].CurrentVal >= maxCurThreshold[j]) {
+                mMotorMaxCurrentTime[j]++;		//大电流时FG信号最大持续时间
                 if(j == 0) {
-                    if(countStepMotor > 10 && mMotorMaxCurrentTime[0] > 500) {  //压紧胶条时间长度大于500ms
+                    if(motorRunAngle[j] > 10 && mMotorMaxCurrentTime[0] > motorMaxCurHoldTimeMsThreshold) {  //压紧胶条时间长度大于500ms
                         HAL_GPIO_WritePin(MOTOR_PWR_CTRL1_GPIO_Port, MOTOR_PWR_CTRL1_Pin, GPIO_PIN_RESET);
-                        // printf("mCount.motorCMD510BRunStaA = %d adcPower[%d] = %d\r\n",mCount.motorCMD510BRunStaA,j, (adcPower[j] / ADC_DIVISION_VAL));
+                        // printf("=========mCount.motorCMD510BRunStaA = %d adcPower[%d] = %d motorRunAngle[%d] = %d\r\n",mCount.motorCMD510BRunStaA,j, mMotorAdc[j].CurrentVal,j,motorRunAngle[j]);
                     }
                 }
                 else if(j == 1) {
-                    if(countStepMotor > 10 && mMotorMaxCurrentTime[1] > 500) {  //压紧胶条时间长度大于500ms
+                    if(motorRunAngle[j] > 10 && mMotorMaxCurrentTime[1] > motorMaxCurHoldTimeMsThreshold) {  //压紧胶条时间长度大于500ms
                         HAL_GPIO_WritePin(MOTOR_PWR_CTRL2_GPIO_Port, MOTOR_PWR_CTRL2_Pin, GPIO_PIN_RESET);
-                        // printf("mCount.motorCMD510BRunStaB = %d adcPower[%d] = %d\r\n",mCount.motorCMD510BRunStaB,j, (adcPower[j] / ADC_DIVISION_VAL));
+                        // printf("=========mCount.motorCMD510BRunStaB = %d adcPower[%d] = %d motorRunAngle[%d] = %d\r\n",mCount.motorCMD510BRunStaB,j, mMotorAdc[j].CurrentVal,j,motorRunAngle[j]);
                     }
                 }
             }
@@ -368,7 +416,7 @@ void adcSampling(void)
         mMotorAdc[0].SamplingFalg = 0;   //清除采集完成标识
         mMotorAdc[0].CurFlag = 1;
     }
-#if (MACHIME_POWER_LOSS_PROTECTION == PROTECTION_ENABLED)
+#if (MACHINE_POWER_LOSS_DETECT == PROTECTION_ENABLED)
     if(mPowerAdcB.SamplingFalg == 1) {
         int32_t tempSum = 0;
         for(int i = 0;i <ADC_DIVISION_VAL;i++) {
@@ -438,30 +486,40 @@ void adcCallback(void)
     
     if(mMotorAdc[0].DivVal[mMotorAdc[0].DivNum] >= MAX_CURRENT_MOTOR) {  //5A  ，实测效果很好，MOS管不会坏 ， 2025-07-16
         mPtMotorCurrentCount[0]++;
-        if(mPtMotorCurrentCount[0] > 10) {              //参数为10时，短路时峰值电流为16A，持续时间约100us, 取值10的原因：辰鑫400350DW电机，启动瞬间会有4个周期电流值超过2625，
+        if(mPtMotorCurrentCount[0] > 30) {              //参数为5时，短路时峰值电流为16A，持续时间约100us, 取值10的原因：辰鑫400350DW电机，启动瞬间会有4个周期电流值超过2625，
             HAL_GPIO_WritePin(MOTOR_PWR_CTRL1_GPIO_Port, MOTOR_PWR_CTRL1_Pin, GPIO_PIN_RESET);
             mPtMotorCurrentMax[4]++;
+        }
+
+        if(mMotorAdc[0].DivVal[mMotorAdc[0].DivNum] > mPtMotorCurrentMax[1]) {
+            mPtMotorCurrentMax[0] = mMotorAdc[0].DivVal[mMotorAdc[0].DivNum];
+
         }
     }
     else {
         mPtMotorCurrentCount[0] = 0;
-        // if(mCount.motorCMD510BRunStaA > 10) {
+        // if(mCount.motorCMD510BRunStaA > 5) {
         //     if (mMotorAdc[0].DivVal[mMotorAdc[0].DivNum] > MOTOR_PUSH_CURRENT) { //875 = (705 << 12) / 3300 ; 阈值：600时的电流，705 = 1342mA ; 700 = 1074mA ;
         //         mPtMotorPushCurrentCount[0]++;
         //         if(mPtMotorPushCurrentCount[0] > 10) {
         //             HAL_GPIO_WritePin(MOTOR_PWR_CTRL1_GPIO_Port, MOTOR_PWR_CTRL1_Pin, GPIO_PIN_RESET);
         //         }
         //     }
-        //     else {
+        //     else
         //         mPtMotorPushCurrentCount[0] = 0;
         //     }
         // }        
     }
     if(mMotorAdc[1].DivVal[mMotorAdc[0].DivNum] >= MAX_CURRENT_MOTOR) {
         mPtMotorCurrentCount[1]++;
-        if(mPtMotorCurrentCount[1] > 10) {
+        if(mPtMotorCurrentCount[1] > 30) {
             HAL_GPIO_WritePin(MOTOR_PWR_CTRL2_GPIO_Port, MOTOR_PWR_CTRL2_Pin, GPIO_PIN_RESET);
             mPtMotorCurrentMax[5]++;
+        }
+        
+        if(mMotorAdc[1].DivVal[mMotorAdc[0].DivNum] > mPtMotorCurrentMax[1]) {
+            mPtMotorCurrentMax[1] = mMotorAdc[1].DivVal[mMotorAdc[0].DivNum];
+
         }
     }
     else {

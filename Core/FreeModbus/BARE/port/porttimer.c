@@ -48,14 +48,14 @@ __IO uint8_t mDebugFlagPowerDownCMD510BC[5];
 #define THRESHOLD_LEN                   30
 #define THRESHOLD_LEN_DEC_1          (THRESHOLD_LEN - 1)
 
-#if (MOTOR_MODEL == CHENXIN_5840_3650)
+#if (MOTOR_MODEL == CHENXIN_5840_3650)              // 400350DW 使用辰鑫的电机，一个周期约2.5ms  , 第一个周期约12ms ，第二个周期约9ms
 // const uint32_t FG_THRESHOLD[THRESHOLD_LEN] = {25000,25000,7500,6000,5000,4000,2500,2500,2500,2500
 //                                 ,250,250,250,250,250,250,250,250,250,250};      //400阈值对应电流： 230 ~ 342 （438mA ~ 651mA）
 // const uint32_t FG_THRESHOLD[THRESHOLD_LEN] = {1200,900,750,600,500,400,250,250,250,250
 //                                 ,250,250,250,250,250,250,250,250,250,250};      //400阈值对应电流： 230 ~ 342 （438mA ~ 651mA）
 const uint32_t FG_THRESHOLD[THRESHOLD_LEN] = {1200,1200,1200,1200,1200,1200,1200,1200,1200,1200
                                 ,1200,1200,1200,1200,1200,1200,1200,1200,1200,1200
-								,1200,1200,1200,1200,1200,1200,1200,1200,1200,300};
+								,1200,1200,1200,1200,1200,1200,1200,1200,1200,300};                 //许昌现场的状态： 600 关紧，700开启（配1.5mm百叶）。现在是： 600关紧，800开启（配1.0mm百叶）
 #endif
 
 //行程20mm 速度9mm/s  FG信号不用上拉电阻，5V输出
@@ -144,7 +144,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 //<<<<<<<<<<<<<<<<<<<  中途提高驱动力的处理  <<<<<<<<<<<<<<<<<<<
 
 			if((mCount.motorCMD510BRunStaA >= THRESHOLD_LEN_DEC_1 && mOSTM16_SysTick20us_CMD510B_M_A >= (FG_THRESHOLD[THRESHOLD_LEN_DEC_1] + mAddFgVal)) 
-            || (mOSTM16_SysTick20us_CMD510B_M_A >= (FG_THRESHOLD[mCount.motorCMD510BRunStaA] + mAddFgVal) && (mCount.motorCMD510BRunStaA < THRESHOLD_LEN_DEC_1 && mCount.motorCMD510BRunStaA > 0)) 
+            // || (mOSTM16_SysTick20us_CMD510B_M_A >= (FG_THRESHOLD[mCount.motorCMD510BRunStaA] + mAddFgVal) && (mCount.motorCMD510BRunStaA < THRESHOLD_LEN_DEC_1 && ((mCount.motorCMD510BRunStaA > 10 && mKeySta.nowKeySta == OPEN_DOOR) || (mCount.motorCMD510BRunStaA > 5 && mKeySta.nowKeySta == CLOSE_DOOR)))) 
+            || (mOSTM16_SysTick20us_CMD510B_M_A >= (FG_THRESHOLD[mCount.motorCMD510BRunStaA] + mAddFgVal) && (mCount.motorCMD510BRunStaA < THRESHOLD_LEN_DEC_1 && ((mCount.motorCMD510BRunStaA > 0)))) 
             || (mCount.motorCMD510BRunStaA == 0 && mOSTM16_SysTick20us_CMD510B_M_A > 1300)) {	//10ms  If the pulse is not received for a long time, it means that the motor is stuck.
                 if(mDebugFlagPowerDownCMD510BA[0] == 0) {
 #if (MOTOR_MODEL == CHENXIN_5840_3650)
@@ -175,7 +176,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 //<<<<<<<<<<<<<<<<<<<  中途提高驱动力的处理  <<<<<<<<<<<<<<<<<<<
 			if((mCount.motorCMD510BRunStaB >= THRESHOLD_LEN_DEC_1 && mOSTM16_SysTick20us_CMD510B_M_B >= (FG_THRESHOLD[THRESHOLD_LEN_DEC_1] + mAddFgVal))
-            || (mOSTM16_SysTick20us_CMD510B_M_B >= (FG_THRESHOLD[mCount.motorCMD510BRunStaB] + mAddFgVal) && (mCount.motorCMD510BRunStaB < THRESHOLD_LEN_DEC_1 && mCount.motorCMD510BRunStaB > 0))
+            // || (mOSTM16_SysTick20us_CMD510B_M_B >= (FG_THRESHOLD[mCount.motorCMD510BRunStaB] + mAddFgVal) && (mCount.motorCMD510BRunStaB < THRESHOLD_LEN_DEC_1 && ((mCount.motorCMD510BRunStaB > 10 && mKeySta.nowKeySta == OPEN_DOOR) || (mCount.motorCMD510BRunStaB > 5 && mKeySta.nowKeySta == CLOSE_DOOR))))
+            || (mOSTM16_SysTick20us_CMD510B_M_B >= (FG_THRESHOLD[mCount.motorCMD510BRunStaB] + mAddFgVal) && (mCount.motorCMD510BRunStaB < THRESHOLD_LEN_DEC_1 && ((mCount.motorCMD510BRunStaB > 0))))
             || (mCount.motorCMD510BRunStaB == 0 && mOSTM16_SysTick20us_CMD510B_M_B > 1300)) {	//power up 25ms，FG is 0，
 
                 if(mDebugFlagPowerDownCMD510BB[0] == 0) {

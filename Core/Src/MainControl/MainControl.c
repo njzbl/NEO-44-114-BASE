@@ -51,7 +51,11 @@ extern __IO uint8_t mDebugFlagPowerDownCMD510BC[5];
 extern __IO uint32_t mPtMotorCurrentMax[30];
 extern __IO uint8_t mPtMotorCurrentCount[3];
 extern __IO uint8_t mPtMotorPushCurrentCount[3];
-extern uint32_t mMotorMaxCurrentTime[3];
+extern uint32_t mMotorMaxCurrentTime[3];						//大电流时FG信号最大持续时间
+#if(MACHINE_DEBUG == DEBUG_ENABLED)
+extern __IO uint16_t mMotorCurMaxTotal[2][40];        			//测试代码需要的变量，正式程序中要屏蔽，减少堆的占用
+extern __IO uint16_t mMotorCurMaxNow[2][40];        			//测试代码需要的变量，正式程序中要屏蔽，减少堆的占用
+#endif
 // uint16_t mMotorCurTemp[1024] = {0};
 uint16_t mMotorCurCount = 0;
 uint16_t mMotorCurCountFlag = 0;
@@ -95,6 +99,9 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
         if(mCMD510BPowerFlagA == 1) {       //增加了下拉电阻，这条限制语句就可以不用增加了，如果没有下拉电阻，那么在电机掉电后因为内部电容的存在，FG信号会缓慢的从高电平掉落到低电平，就是触发成千上万个FG脉冲信号。增加了下拉电阻可以非常有效的解决这个问题。
             return ;
         }
+#if (MOTOR_MODEL == CHENXIN_5840_3650)
+		mMotorMaxCurrentTime[0] = 0;		//大电流时FG信号最大持续时间
+#endif
 
 #if (MOTOR_MODEL == TZC36_5840_3650)
         if(mCount.motor > 200) {      //因为万融电机,前500ms内FG就没有
@@ -132,6 +139,10 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
         if(mCMD510BPowerFlagB == 1) {       //增加了下拉电阻，这条限制语句就可以不用增加了
             return ;
         }
+#if (MOTOR_MODEL == CHENXIN_5840_3650)
+		mMotorMaxCurrentTime[1] = 0;		//大电流时FG信号最大持续时间
+#endif
+
 #if (MOTOR_MODEL == TZC36_5840_3650)
         if(mCount.motor > 200) {      //因为万融电机,前500ms内FG就没有
             mCount.motorCMD510BRunStaB++;
@@ -168,6 +179,10 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
         if(mCMD510BPowerFlagC == 1) {       //增加了下拉电阻，这条限制语句就可以不用增加了
             return ;
         }
+#if (MOTOR_MODEL == CHENXIN_5840_3650)
+		mMotorMaxCurrentTime[2] = 0;		//大电流时FG信号最大持续时间
+#endif
+
 #if (MOTOR_MODEL == TZC36_5840_3650)
         if(mCount.motor > 200) {      //因为万融电机,前500ms内FG就没有
             mCount.motorCMD510BRunStaC++;
@@ -248,6 +263,14 @@ void InitVar(void)
     mMachineModbusSta.fan2RPM = 0;                                  //上电时默认风扇转速处于0状态；
     mMachineModbusSta.temperature = mTemplateAdc.CurrentVal + 273;      //开氏温度  MCU温度
     mMachineModbusSta.FanSta2 = NORMAL_MODE;                        //上电时默认百叶处于关闭状态；
+#if(MACHINE_DEBUG == DEBUG_ENABLED)
+	for(int i = 0; i < 40; i++) {
+		mMotorCurMaxTotal[0][i] = 0;        //测试代码需要的变量，正式程序中要屏蔽，减少堆的占用
+		mMotorCurMaxTotal[1][i] = 0;        //测试代码需要的变量，正式程序中要屏蔽，减少堆的占用
+		mMotorCurMaxNow[0][i] = 0;        //测试代码需要的变量，正式程序中要屏蔽，减少堆的占用
+		mMotorCurMaxNow[1][i] = 0;        //测试代码需要的变量，正式程序中要屏蔽，减少堆的占用
+	}
+#endif
 }
 
 void InitNewKeyVar(uint8_t keySta)
@@ -348,6 +371,13 @@ void InitNewKeyVar(uint8_t keySta)
 
     // for(int i = 0; i < sizeof(mMotorCurTemp) / sizeof(uint16_t); i++)
     //     mMotorCurTemp[i] = 0;
+	
+#if(MACHINE_DEBUG == DEBUG_ENABLED)
+	for(int i = 0; i < 40; i++) {
+		mMotorCurMaxNow[0][i] = 0;        //测试代码需要的变量，正式程序中要屏蔽，减少堆的占用
+		mMotorCurMaxNow[1][i] = 0;        //测试代码需要的变量，正式程序中要屏蔽，减少堆的占用
+	}
+#endif
     mMotorCurCount = 0;
     mMotorCurCountFlag = 0;
 	mDoorRunNumSta++;
@@ -481,7 +511,7 @@ int MainControl(void)
 
 
 
-#if (MACHIME_POWER_LOSS_PROTECTION == PROTECTION_ENABLED)
+#if (MACHINE_POWER_LOSS_DETECT == PROTECTION_ENABLED)
     if(mPowerAdcB.CurrentVal < mPowerAdcB.ThresholdMin && mCount.initBackDoor > DELAY_7S) {      //上电7秒以后  ,断电自动关闭百叶。
         mKeyValQG = KEY_VAL_CLOSE_WIN;
     }
@@ -653,7 +683,7 @@ int MainControl(void)
 			else {
 				mOutputSta.motorS1 = MACHINE_OK;
 			}
-#if (MACHIME_DETECT_FOREIGN == DETECT_FOREIGN_ENABLED)
+#if (MACHINE_DETECT_FOREIGN == DETECT_FOREIGN_ENABLED)
             if((mDoorSta.doorPositionFinalA < (2080 - 200)) || (mDoorSta.doorPositionFinalB < (2080 - 200))) {	//测试的首台样机装配百叶后，总行程为2080左右个脉冲。实际代码这里一定是要修正的
                 mOutputSta.motorS1 = MACHINE_ERR;
             }
@@ -693,6 +723,59 @@ int MainControl(void)
         //         ,mMotorCurTemp[15 + i * 20],mMotorCurTemp[16 + i * 20],mMotorCurTemp[17 + i * 20],mMotorCurTemp[18 + i * 20],mMotorCurTemp[19 + i * 20]
         //         );
         // }
+#if(MACHINE_DEBUG == DEBUG_ENABLED)
+		printf("mMotorCurMaxNow[0] 00 ~ 09: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxNow[0][0],mMotorCurMaxNow[0][1],mMotorCurMaxNow[0][2],mMotorCurMaxNow[0][3],mMotorCurMaxNow[0][4],
+			mMotorCurMaxNow[0][5],mMotorCurMaxNow[0][6],mMotorCurMaxNow[0][7],mMotorCurMaxNow[0][8],mMotorCurMaxNow[0][9]);
+		printf("mMotorCurMaxNow[0] 10 ~ 19: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxNow[0][10],mMotorCurMaxNow[0][11],mMotorCurMaxNow[0][12],mMotorCurMaxNow[0][13],mMotorCurMaxNow[0][14],
+			mMotorCurMaxNow[0][15],mMotorCurMaxNow[0][16],mMotorCurMaxNow[0][17],mMotorCurMaxNow[0][18],mMotorCurMaxNow[0][19]);
+		printf("mMotorCurMaxNow[0] 20 ~ 29: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxNow[0][20],mMotorCurMaxNow[0][21],mMotorCurMaxNow[0][22],mMotorCurMaxNow[0][23],mMotorCurMaxNow[0][24],
+			mMotorCurMaxNow[0][25],mMotorCurMaxNow[0][26],mMotorCurMaxNow[0][27],mMotorCurMaxNow[0][28],mMotorCurMaxNow[0][29]);
+		printf("mMotorCurMaxNow[0] 30 ~ 39: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxNow[0][30],mMotorCurMaxNow[0][31],mMotorCurMaxNow[0][32],mMotorCurMaxNow[0][33],mMotorCurMaxNow[0][34],
+			mMotorCurMaxNow[0][35],mMotorCurMaxNow[0][36],mMotorCurMaxNow[0][37],mMotorCurMaxNow[0][38],mMotorCurMaxNow[0][39]);
+		printf("mMotorCurMaxNow[1] 00 ~ 09: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxNow[1][0],mMotorCurMaxNow[1][1],mMotorCurMaxNow[1][2],mMotorCurMaxNow[1][3],mMotorCurMaxNow[1][4],
+			mMotorCurMaxNow[1][5],mMotorCurMaxNow[1][6],mMotorCurMaxNow[1][7],mMotorCurMaxNow[1][8],mMotorCurMaxNow[1][9]);
+		printf("mMotorCurMaxNow[1] 10 ~ 19: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxNow[1][10],mMotorCurMaxNow[1][11],mMotorCurMaxNow[1][12],mMotorCurMaxNow[1][13],mMotorCurMaxNow[1][14],
+			mMotorCurMaxNow[1][15],mMotorCurMaxNow[1][16],mMotorCurMaxNow[1][17],mMotorCurMaxNow[1][18],mMotorCurMaxNow[1][19]);
+		printf("mMotorCurMaxNow[1] 20 ~ 29: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxNow[1][20],mMotorCurMaxNow[1][21],mMotorCurMaxNow[1][22],mMotorCurMaxNow[1][23],mMotorCurMaxNow[1][24],
+			mMotorCurMaxNow[1][25],mMotorCurMaxNow[1][26],mMotorCurMaxNow[1][27],mMotorCurMaxNow[1][28],mMotorCurMaxNow[1][29]);
+		printf("mMotorCurMaxNow[1] 30 ~ 39: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxNow[1][30],mMotorCurMaxNow[1][31],mMotorCurMaxNow[1][32],mMotorCurMaxNow[1][33],mMotorCurMaxNow[1][34],
+			mMotorCurMaxNow[1][35],mMotorCurMaxNow[1][36],mMotorCurMaxNow[1][37],mMotorCurMaxNow[1][38],mMotorCurMaxNow[1][39]);
+		printf("------------------------------------------------------ \r\n");
+		printf("mMotorCurMaxTotal[0] 00 ~ 09: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxTotal[0][0],mMotorCurMaxTotal[0][1],mMotorCurMaxTotal[0][2],mMotorCurMaxTotal[0][3],mMotorCurMaxTotal[0][4],
+			mMotorCurMaxTotal[0][5],mMotorCurMaxTotal[0][6],mMotorCurMaxTotal[0][7],mMotorCurMaxTotal[0][8],mMotorCurMaxTotal[0][9]);
+		printf("mMotorCurMaxTotal[0] 10 ~ 19: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxTotal[0][10],mMotorCurMaxTotal[0][11],mMotorCurMaxTotal[0][12],mMotorCurMaxTotal[0][13],mMotorCurMaxTotal[0][14],
+			mMotorCurMaxTotal[0][15],mMotorCurMaxTotal[0][16],mMotorCurMaxTotal[0][17],mMotorCurMaxTotal[0][18],mMotorCurMaxTotal[0][19]);
+		printf("mMotorCurMaxTotal[0] 20 ~ 29: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxTotal[0][20],mMotorCurMaxTotal[0][21],mMotorCurMaxTotal[0][22],mMotorCurMaxTotal[0][23],mMotorCurMaxTotal[0][24],
+			mMotorCurMaxTotal[0][25],mMotorCurMaxTotal[0][26],mMotorCurMaxTotal[0][27],mMotorCurMaxTotal[0][28],mMotorCurMaxTotal[0][29]);
+		printf("mMotorCurMaxTotal[0] 30 ~ 39: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxTotal[0][30],mMotorCurMaxTotal[0][31],mMotorCurMaxTotal[0][32],mMotorCurMaxTotal[0][33],mMotorCurMaxTotal[0][34],
+			mMotorCurMaxTotal[0][35],mMotorCurMaxTotal[0][36],mMotorCurMaxTotal[0][37],mMotorCurMaxTotal[0][38],mMotorCurMaxTotal[0][39]);
+		printf("mMotorCurMaxTotal[1] 00 ~ 09: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxTotal[1][0],mMotorCurMaxTotal[1][1],mMotorCurMaxTotal[1][2],mMotorCurMaxTotal[1][3],mMotorCurMaxTotal[1][4],
+			mMotorCurMaxTotal[1][5],mMotorCurMaxTotal[1][6],mMotorCurMaxTotal[1][7],mMotorCurMaxTotal[1][8],mMotorCurMaxTotal[1][9]);
+		printf("mMotorCurMaxTotal[1] 10 ~ 19: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxTotal[1][10],mMotorCurMaxTotal[1][11],mMotorCurMaxTotal[1][12],mMotorCurMaxTotal[1][13],mMotorCurMaxTotal[1][14],
+			mMotorCurMaxTotal[1][15],mMotorCurMaxTotal[1][16],mMotorCurMaxTotal[1][17],mMotorCurMaxTotal[1][18],mMotorCurMaxTotal[1][19]);
+		printf("mMotorCurMaxTotal[1] 20 ~ 29: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxTotal[1][20],mMotorCurMaxTotal[1][21],mMotorCurMaxTotal[1][22],mMotorCurMaxTotal[1][23],mMotorCurMaxTotal[1][24],
+			mMotorCurMaxTotal[1][25],mMotorCurMaxTotal[1][26],mMotorCurMaxTotal[1][27],mMotorCurMaxTotal[1][28],mMotorCurMaxTotal[1][29]);
+		printf("mMotorCurMaxTotal[1] 30 ~ 39: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxTotal[1][30],mMotorCurMaxTotal[1][31],mMotorCurMaxTotal[1][32],mMotorCurMaxTotal[1][33],mMotorCurMaxTotal[1][34],
+			mMotorCurMaxTotal[1][35],mMotorCurMaxTotal[1][36],mMotorCurMaxTotal[1][37],mMotorCurMaxTotal[1][38],mMotorCurMaxTotal[1][39]);
+		printf("====================================================== \r\n");
+#endif
+		
 	}
 	else if(mCount.motor >= DELAY_7S) {
 		mCount.motor = DELAY_7S + 1;
@@ -777,6 +860,47 @@ int MainControl(void)
 			setSysSta(0);
 		}
 #endif
+#if(MACHINE_DEBUG == DEBUG_ENABLED)
+		printf("%d mCount.motorCMD510BRunStaA:B:C = %d_%d_%d\r\n",mKeySta.nowKeySta,mCount.motorCMD510BRunStaA,mCount.motorCMD510BRunStaB,mCount.motorCMD510BRunStaC);
+		printf("mMotorCurMaxNow[0] 00 ~ 09: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxNow[0][0],mMotorCurMaxNow[0][1],mMotorCurMaxNow[0][2],mMotorCurMaxNow[0][3],mMotorCurMaxNow[0][4],
+			mMotorCurMaxNow[0][5],mMotorCurMaxNow[0][6],mMotorCurMaxNow[0][7],mMotorCurMaxNow[0][8],mMotorCurMaxNow[0][9]);
+		printf("mMotorCurMaxNow[0] 10 ~ 19: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxNow[0][10],mMotorCurMaxNow[0][11],mMotorCurMaxNow[0][12],mMotorCurMaxNow[0][13],mMotorCurMaxNow[0][14],
+			mMotorCurMaxNow[0][15],mMotorCurMaxNow[0][16],mMotorCurMaxNow[0][17],mMotorCurMaxNow[0][18],mMotorCurMaxNow[0][19]);
+		printf("mMotorCurMaxNow[0] 20 ~ 29: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxNow[0][20],mMotorCurMaxNow[0][21],mMotorCurMaxNow[0][22],mMotorCurMaxNow[0][23],mMotorCurMaxNow[0][24],
+			mMotorCurMaxNow[0][25],mMotorCurMaxNow[0][26],mMotorCurMaxNow[0][27],mMotorCurMaxNow[0][28],mMotorCurMaxNow[0][29]);
+		printf("mMotorCurMaxNow[1] 00 ~ 09: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxNow[1][0],mMotorCurMaxNow[1][1],mMotorCurMaxNow[1][2],mMotorCurMaxNow[1][3],mMotorCurMaxNow[1][4],
+			mMotorCurMaxNow[1][5],mMotorCurMaxNow[1][6],mMotorCurMaxNow[1][7],mMotorCurMaxNow[1][8],mMotorCurMaxNow[1][9]);
+		printf("mMotorCurMaxNow[1] 10 ~ 19: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxNow[1][10],mMotorCurMaxNow[1][11],mMotorCurMaxNow[1][12],mMotorCurMaxNow[1][13],mMotorCurMaxNow[1][14],
+			mMotorCurMaxNow[1][15],mMotorCurMaxNow[1][16],mMotorCurMaxNow[1][17],mMotorCurMaxNow[1][18],mMotorCurMaxNow[1][19]);
+		printf("mMotorCurMaxNow[1] 20 ~ 29: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxNow[1][20],mMotorCurMaxNow[1][21],mMotorCurMaxNow[1][22],mMotorCurMaxNow[1][23],mMotorCurMaxNow[1][24],
+			mMotorCurMaxNow[1][25],mMotorCurMaxNow[1][26],mMotorCurMaxNow[1][27],mMotorCurMaxNow[1][28],mMotorCurMaxNow[1][29]);
+		printf("++++++++++++++++++++++++++++++++++++++++++++++++++++++ \r\n");
+		printf("mMotorCurMaxTotal[0] 00 ~ 09: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxTotal[0][0],mMotorCurMaxTotal[0][1],mMotorCurMaxTotal[0][2],mMotorCurMaxTotal[0][3],mMotorCurMaxTotal[0][4],
+			mMotorCurMaxTotal[0][5],mMotorCurMaxTotal[0][6],mMotorCurMaxTotal[0][7],mMotorCurMaxTotal[0][8],mMotorCurMaxTotal[0][9]);
+		printf("mMotorCurMaxTotal[0] 10 ~ 19: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxTotal[0][10],mMotorCurMaxTotal[0][11],mMotorCurMaxTotal[0][12],mMotorCurMaxTotal[0][13],mMotorCurMaxTotal[0][14],
+			mMotorCurMaxTotal[0][15],mMotorCurMaxTotal[0][16],mMotorCurMaxTotal[0][17],mMotorCurMaxTotal[0][18],mMotorCurMaxTotal[0][19]);
+		printf("mMotorCurMaxTotal[0] 20 ~ 29: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxTotal[0][20],mMotorCurMaxTotal[0][21],mMotorCurMaxTotal[0][22],mMotorCurMaxTotal[0][23],mMotorCurMaxTotal[0][24],
+			mMotorCurMaxTotal[0][25],mMotorCurMaxTotal[0][26],mMotorCurMaxTotal[0][27],mMotorCurMaxTotal[0][28],mMotorCurMaxTotal[0][29]);
+		printf("mMotorCurMaxTotal[1] 00 ~ 09: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxTotal[1][0],mMotorCurMaxTotal[1][1],mMotorCurMaxTotal[1][2],mMotorCurMaxTotal[1][3],mMotorCurMaxTotal[1][4],
+			mMotorCurMaxTotal[1][5],mMotorCurMaxTotal[1][6],mMotorCurMaxTotal[1][7],mMotorCurMaxTotal[1][8],mMotorCurMaxTotal[1][9]);
+		printf("mMotorCurMaxTotal[1] 10 ~ 19: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxTotal[1][10],mMotorCurMaxTotal[1][11],mMotorCurMaxTotal[1][12],mMotorCurMaxTotal[1][13],mMotorCurMaxTotal[1][14],
+			mMotorCurMaxTotal[1][15],mMotorCurMaxTotal[1][16],mMotorCurMaxTotal[1][17],mMotorCurMaxTotal[1][18],mMotorCurMaxTotal[1][19]);
+		printf("mMotorCurMaxTotal[1] 20 ~ 29: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+			mMotorCurMaxTotal[1][20],mMotorCurMaxTotal[1][21],mMotorCurMaxTotal[1][22],mMotorCurMaxTotal[1][23],mMotorCurMaxTotal[1][24],
+			mMotorCurMaxTotal[1][25],mMotorCurMaxTotal[1][26],mMotorCurMaxTotal[1][27],mMotorCurMaxTotal[1][28],mMotorCurMaxTotal[1][29]);
+		printf("****************************************************** \r\n");
+#endif
 
 //>>>>>>>>>485 反馈状态>>>>>>>>>>>>> 
         uint32_t fg_cur[MOTOR_BDC_NUMBER_MAX] = {0};        
@@ -857,7 +981,7 @@ void OpenExShades(void)
 		mMachineSta.hBridgeSta = H_BRIDGE_STATE_OPEN_L;
 	}
 	else if(mMachineSta.hBridgeSta == H_BRIDGE_STATE_OPEN_L) {
-#if (MOTOR_MODEL == DLK_TG_60W || MOTOR_MODEL == WG_TG)
+#if (MOTOR_MODEL == DLK_TG_60W || MOTOR_MODEL == G_ROCH_D3Ex || MOTOR_MODEL == WG_TG)
 		setBDCMotorForward(MOTOR1_LOGIC_CHN);
 		setBDCMotorForward(MOTOR2_LOGIC_CHN);
 #endif
@@ -893,7 +1017,7 @@ void CloseExShades(void)
 		mMachineSta.hBridgeSta = H_BRIDGE_STATE_OPEN_L;
 	}
 	else if(mMachineSta.hBridgeSta == H_BRIDGE_STATE_OPEN_L) {
-#if (MOTOR_MODEL == DLK_TG_60W || MOTOR_MODEL == WG_TG)
+#if (MOTOR_MODEL == DLK_TG_60W || MOTOR_MODEL == G_ROCH_D3Ex || MOTOR_MODEL == WG_TG)
 		setBDCMotorBack(MOTOR1_LOGIC_CHN);
 		setBDCMotorBack(MOTOR2_LOGIC_CHN);
 #endif

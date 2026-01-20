@@ -286,7 +286,7 @@ void setDirPwm(uint8_t chn,uint8_t sta)
     }
     else if(chn == 2){
 
-#if (MACHIME_THIRD_MOTOR == THIRD_MOTOR_ENABLED)
+#if (MACHINE_THIRD_MOTOR == THIRD_MOTOR_ENABLED)
         setFanPWM(sta);
 #endif
     }
@@ -314,7 +314,7 @@ void setBDCMotorForward(uint8_t sn)
         mCMD510BPowerFlagB = 0;
         break;
     }
-#if (MACHIME_THIRD_MOTOR == THIRD_MOTOR_ENABLED)
+#if (MACHINE_THIRD_MOTOR == THIRD_MOTOR_ENABLED)
 
     case 2: {
         HAL_GPIO_WritePin(DC_FAN_CTRL_GPIO_Port, DC_FAN_CTRL_Pin, GPIO_PIN_SET);
@@ -348,7 +348,7 @@ void setBDCMotorBack(uint8_t sn)
         HAL_GPIO_WritePin(MOTOR_PWR_CTRL2_GPIO_Port, MOTOR_PWR_CTRL2_Pin, GPIO_PIN_SET);
         break;
     }
-#if (MACHIME_THIRD_MOTOR == THIRD_MOTOR_ENABLED)
+#if (MACHINE_THIRD_MOTOR == THIRD_MOTOR_ENABLED)
     case 2: {
         HAL_GPIO_WritePin(DC_FAN_CTRL_GPIO_Port, DC_FAN_CTRL_Pin, GPIO_PIN_SET);
         break;
@@ -378,7 +378,7 @@ void setBDCMotorStop(uint8_t sn)
         mCMD510BPowerFlagB = 1;
         break;
     }
-#if (MACHIME_THIRD_MOTOR == THIRD_MOTOR_ENABLED)
+#if (MACHINE_THIRD_MOTOR == THIRD_MOTOR_ENABLED)
     case 2: {
         HAL_GPIO_WritePin(DC_FAN_CTRL_GPIO_Port, DC_FAN_CTRL_Pin, GPIO_PIN_RESET);
         mCMD510BPowerFlagC = 1;
