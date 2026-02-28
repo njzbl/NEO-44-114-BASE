@@ -94,13 +94,13 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 	
 	
   	if(GPIO_Pin == ON_STATE1_Pin) {
-		mDoorSta.motorCh = 0;
+		mDoorSta.motorCh = MOTOR1_LOGIC_CHN;
 	}	
 	else if(GPIO_Pin == ON_STATE2_Pin) {
-		mDoorSta.motorCh = 1;
+		mDoorSta.motorCh = MOTOR2_LOGIC_CHN;
 	}
 	else if(GPIO_Pin == FAN_FG_Pin) {
-		mDoorSta.motorCh = 3;
+		mDoorSta.motorCh = MOTOR3_LOGIC_CHN;
 	}
 
 	if(mCMD510BPowerFlag[mDoorSta.motorCh] == 1) {       //增加了下拉电阻，这条限制语句就可以不用增加了，如果没有下拉电阻，那么在电机掉电后因为内部电容的存在，FG信号会缓慢的从高电平掉落到低电平，就是触发成千上万个FG脉冲信号。增加了下拉电阻可以非常有效的解决这个问题。
