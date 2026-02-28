@@ -65,7 +65,11 @@ typedef struct OUTPUT_STA
 void MX_GPIO_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_FB_NC_HW)
+void fixInitGPIO(void);
+GPIO_PinState getON_STATE1(void);
+GPIO_PinState getON_STATE2(void);
+#endif
 void setLED0(uint8_t sta);
 void setACFanCtrl(uint8_t sta);
 void setDCFanCtrl(uint8_t sta);

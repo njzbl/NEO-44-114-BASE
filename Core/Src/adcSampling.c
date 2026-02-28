@@ -124,6 +124,7 @@ __IO uint8_t mPtMotorPushCurrentCount[3] = {0};
 #if(MACHINE_DEBUG == DEBUG_ENABLED)
 __IO uint16_t mMotorCurMaxTotal[2][40] = {0};               //测试代码需要的变量，正式程序中要屏蔽，减少堆的占用
 __IO uint16_t mMotorCurMaxNow[2][40] = {0};                 //测试代码需要的变量，正式程序中要屏蔽，减少堆的占用
+uint16_t mMotorCurNow[1000] = {0};
 #endif
 uint32_t mMotorMaxCurrentTime[3] = {0};             		//大电流时FG信号最大持续时间
 
@@ -191,7 +192,7 @@ void adcSampling(void)
     mFanAdc.CurrentVal = adcSum;
 #if (FAN_MODEL == FAN_MODEL_AC_75W)
     //这个值是NEO自己的风机，福佑的风机值还要再测试。用于华为项目，华为和阳光电源mFanAdc.ThresholdMin = 10000;
-    mFanAdc.ThresholdMin = 2000;   //风扇不转时150,  风扇转时6000+   //mFanAdc.ThresholdMin = 1000000;          //实际电流约30000~40000
+    mFanAdc.ThresholdMin = 3500;   //风扇不转时350,  风扇转时10000+   //mFanAdc.ThresholdMin = 1000000;          //实际电流约30000~40000
     mFanAdc.ThresholdMax = 575000000;  //mFanAdc.ThresholdMax = 575000000;        //实际电流约30000000~75000000
 #endif
         
@@ -352,17 +353,17 @@ void adcSampling(void)
             motorRunAngle[j] = mDoorSta.motorCurNum[j];
             motorMaxCurHoldTimeMsThreshold = 500;
 #endif
-#if(MOTOR_MODEL == DLK_YLSZ23_FB)
+#if(MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_YLSZ23_FB)
             maxCurThreshold[j] = 2000;                      //待机电流0.04mA  空载 500 ~ 600mA   
             motorRunAngle[j] = mDoorSta.motorCurNum[j];
-            motorMaxCurHoldTimeMsThreshold = 500;
+            motorMaxCurHoldTimeMsThreshold = 50;
 #endif
 #if(MOTOR_MODEL == WG_TG)
             maxCurThreshold[j] = 2000;
             motorRunAngle[j] = mDoorSta.motorCurNum[j];
-            motorMaxCurHoldTimeMsThreshold = 500;
+            motorMaxCurHoldTimeMsThreshold = 50;
 #endif
-#if(MOTOR_MODEL == CHENXIN_5840_3650)
+#if(MOTOR_MODEL == CHENXIN_5840_3650)           //辰鑫电机运行时电流通常50+ ， 不通电20+ ，
             uint8_t countTemp = 0;
             if(mNtc10KAdc.CurrentVal >= -20) {
                 motorMaxCurHoldTimeMsThreshold = 20;
@@ -374,38 +375,99 @@ void adcSampling(void)
             }
             if(j == 0) {
                 motorRunAngle[0] = mCount.motorCMD510BRunStaA;
-#if(MACHINE_DEBUG == DEBUG_ENABLED)
-                countTemp = mCount.motorCMD510BRunStaA / 30;
-                if(mMotorCurMaxNow[j][countTemp] < mMotorAdc[j].CurrentVal)
-                    mMotorCurMaxNow[j][countTemp] = mMotorAdc[j].CurrentVal;
-                if(mMotorCurMaxTotal[j][countTemp] < mMotorAdc[j].CurrentVal)
-                    mMotorCurMaxTotal[j][countTemp] = mMotorAdc[j].CurrentVal;
-#endif
+// #if(MACHINE_DEBUG == DEBUG_ENABLED)
+//                 if(motorRunAngle[0] < 990) {
+//                     if(mMotorCurNow[motorRunAngle[0]] < mMotorAdc[j].CurrentVal)
+//                         mMotorCurNow[motorRunAngle[0]] = mMotorAdc[j].CurrentVal;
+//                 }
+//                 if((motorRunAngle[0] >= 800) && (motorRunAngle[0] < 840)) {
+//                     if(mMotorCurMaxNow[0][motorRunAngle[0] - 800] < mMotorAdc[j].CurrentVal)
+//                         mMotorCurMaxNow[0][motorRunAngle[0] - 800] = mMotorAdc[j].CurrentVal;
+//                     if(mMotorCurMaxTotal[0][motorRunAngle[0] - 800] < mMotorAdc[j].CurrentVal)
+//                         mMotorCurMaxTotal[0][motorRunAngle[0] - 800] = mMotorAdc[j].CurrentVal;
+//                 }
+//                 countTemp = motorRunAngle[0] / 30;
+//                 if(countTemp < 40) {
+//                     if(mMotorCurMaxNow[j][countTemp] < mMotorAdc[j].CurrentVal)
+//                         mMotorCurMaxNow[j][countTemp] = mMotorAdc[j].CurrentVal;
+//                     if(mMotorCurMaxTotal[j][countTemp] < mMotorAdc[j].CurrentVal)
+//                         mMotorCurMaxTotal[j][countTemp] = mMotorAdc[j].CurrentVal;
+//                 }
+// #endif
             }
             else if(j == 1) {
                 motorRunAngle[1] = mCount.motorCMD510BRunStaB;
 #if(MACHINE_DEBUG == DEBUG_ENABLED)
+                // if(motorRunAngle[1] < 30) {
+                //     if(mMotorCurMaxNow[0][motorRunAngle[1]] < mMotorAdc[j].CurrentVal)
+                //         mMotorCurMaxNow[0][motorRunAngle[1]] = mMotorAdc[j].CurrentVal;
+                //     if(mMotorCurMaxTotal[0][motorRunAngle[1]] < mMotorAdc[j].CurrentVal)
+                //         mMotorCurMaxTotal[0][motorRunAngle[1]] = mMotorAdc[j].CurrentVal;
+                // }
+                // else {
+                //     countTemp = mCount.motorCMD510BRunStaB / 30;
+                //     if(mMotorCurMaxNow[j][countTemp] < mMotorAdc[j].CurrentVal)
+                //         mMotorCurMaxNow[j][countTemp] = mMotorAdc[j].CurrentVal;
+                //     if(mMotorCurMaxTotal[j][countTemp] < mMotorAdc[j].CurrentVal)
+                //         mMotorCurMaxTotal[j][countTemp] = mMotorAdc[j].CurrentVal;
+                // }
+                if(motorRunAngle[1] < 990) {
+                    if(mMotorCurNow[motorRunAngle[1]] < mMotorAdc[j].CurrentVal)
+                        mMotorCurNow[motorRunAngle[1]] = mMotorAdc[j].CurrentVal;
+                }
+                if((motorRunAngle[1] >= 800) && (motorRunAngle[1] < 840)) {
+                    if(mMotorCurMaxNow[0][motorRunAngle[1] - 800] < mMotorAdc[j].CurrentVal)
+                        mMotorCurMaxNow[0][motorRunAngle[1] - 800] = mMotorAdc[j].CurrentVal;
+                    if(mMotorCurMaxTotal[0][motorRunAngle[1] - 800] < mMotorAdc[j].CurrentVal)
+                        mMotorCurMaxTotal[0][motorRunAngle[1] - 800] = mMotorAdc[j].CurrentVal;
+                }
                 countTemp = mCount.motorCMD510BRunStaB / 30;
-                if(mMotorCurMaxNow[j][countTemp] < mMotorAdc[j].CurrentVal)
-                    mMotorCurMaxNow[j][countTemp] = mMotorAdc[j].CurrentVal;
-                if(mMotorCurMaxTotal[j][countTemp] < mMotorAdc[j].CurrentVal)
-                    mMotorCurMaxTotal[j][countTemp] = mMotorAdc[j].CurrentVal;
+                if(countTemp < 40) {
+                    if(mMotorCurMaxNow[j][countTemp] < mMotorAdc[j].CurrentVal)
+                        mMotorCurMaxNow[j][countTemp] = mMotorAdc[j].CurrentVal;
+                    if(mMotorCurMaxTotal[j][countTemp] < mMotorAdc[j].CurrentVal)
+                        mMotorCurMaxTotal[j][countTemp] = mMotorAdc[j].CurrentVal;
+                }
 #endif
 
             }
+//             if(j == 0) {
+//                 motorRunAngle[0] = mCount.motorCMD510BRunStaA;
+// #if(MACHINE_DEBUG == DEBUG_ENABLED)
+//                 countTemp = mCount.motorCMD510BRunStaA / 30;
+//                 if(mMotorCurMaxNow[j][countTemp] < mMotorAdc[j].CurrentVal)
+//                     mMotorCurMaxNow[j][countTemp] = mMotorAdc[j].CurrentVal;
+//                 if(mMotorCurMaxTotal[j][countTemp] < mMotorAdc[j].CurrentVal)
+//                     mMotorCurMaxTotal[j][countTemp] = mMotorAdc[j].CurrentVal;
+// #endif
+//             }
+//             else if(j == 1) {
+//                 motorRunAngle[1] = mCount.motorCMD510BRunStaB;
+// #if(MACHINE_DEBUG == DEBUG_ENABLED)
+//                 countTemp = mCount.motorCMD510BRunStaB / 30;
+//                 if(mMotorCurMaxNow[j][countTemp] < mMotorAdc[j].CurrentVal)
+//                     mMotorCurMaxNow[j][countTemp] = mMotorAdc[j].CurrentVal;
+//                 if(mMotorCurMaxTotal[j][countTemp] < mMotorAdc[j].CurrentVal)
+//                     mMotorCurMaxTotal[j][countTemp] = mMotorAdc[j].CurrentVal;
+// #endif
+
+//             }
 #endif
             if(mMotorAdc[j].CurrentVal >= maxCurThreshold[j]) {
                 mMotorMaxCurrentTime[j]++;		//大电流时FG信号最大持续时间
                 if(j == 0) {
                     if(motorRunAngle[j] > 10 && mMotorMaxCurrentTime[0] > motorMaxCurHoldTimeMsThreshold) {  //压紧胶条时间长度大于500ms
+		                mMachineSta.motorPowerSta[MOTOR1_LOGIC_CHN] = MOTOR_POWER_DOWN_STA;
                         HAL_GPIO_WritePin(MOTOR_PWR_CTRL1_GPIO_Port, MOTOR_PWR_CTRL1_Pin, GPIO_PIN_RESET);
                         // printf("=========mCount.motorCMD510BRunStaA = %d adcPower[%d] = %d motorRunAngle[%d] = %d\r\n",mCount.motorCMD510BRunStaA,j, mMotorAdc[j].CurrentVal,j,motorRunAngle[j]);
+                        printf("++++++++++++++++++++++++mCount.motorCMD510BRunStaA = %d adcPower[%d] = %d motorRunAngle[%d] = %d\r\n",mCount.motorCMD510BRunStaA,j, mMotorAdc[j].CurrentVal,j,motorRunAngle[j]);
                     }
                 }
                 else if(j == 1) {
                     if(motorRunAngle[j] > 10 && mMotorMaxCurrentTime[1] > motorMaxCurHoldTimeMsThreshold) {  //压紧胶条时间长度大于500ms
+		                mMachineSta.motorPowerSta[MOTOR2_LOGIC_CHN] = MOTOR_POWER_DOWN_STA;
                         HAL_GPIO_WritePin(MOTOR_PWR_CTRL2_GPIO_Port, MOTOR_PWR_CTRL2_Pin, GPIO_PIN_RESET);
-                        // printf("=========mCount.motorCMD510BRunStaB = %d adcPower[%d] = %d motorRunAngle[%d] = %d\r\n",mCount.motorCMD510BRunStaB,j, mMotorAdc[j].CurrentVal,j,motorRunAngle[j]);
+                        printf("+++++++++++++++++++++++mCount.motorCMD510BRunStaB = %d adcPower[%d] = %d motorRunAngle[%d] = %d\r\n",mCount.motorCMD510BRunStaB,j, mMotorAdc[j].CurrentVal,j,motorRunAngle[j]);
                     }
                 }
             }
@@ -451,7 +513,7 @@ void adcSampling(void)
         mNtc10KAdc.CurrentVal = i - 55;
         mMachineModbusSta.Ntctemperature = mNtc10KAdc.CurrentVal + 273;
         mNtc10KAdc.DivNum = 0; //新的一轮采集开始
-        mNtc10KAdc.SamplingFalg = 0;   //清除采集完成标识
+        // mNtc10KAdc.SamplingFalg = 0;   //清除采集完成标识
         mNtc10KAdc.CurFlag = 1;
     }
 }
@@ -487,6 +549,7 @@ void adcCallback(void)
     if(mMotorAdc[0].DivVal[mMotorAdc[0].DivNum] >= MAX_CURRENT_MOTOR) {  //5A  ，实测效果很好，MOS管不会坏 ， 2025-07-16
         mPtMotorCurrentCount[0]++;
         if(mPtMotorCurrentCount[0] > 30) {              //参数为5时，短路时峰值电流为16A，持续时间约100us, 取值10的原因：辰鑫400350DW电机，启动瞬间会有4个周期电流值超过2625，
+            mMachineSta.motorPowerSta[MOTOR1_LOGIC_CHN] = MOTOR_POWER_DOWN_STA;
             HAL_GPIO_WritePin(MOTOR_PWR_CTRL1_GPIO_Port, MOTOR_PWR_CTRL1_Pin, GPIO_PIN_RESET);
             mPtMotorCurrentMax[4]++;
         }
@@ -513,6 +576,7 @@ void adcCallback(void)
     if(mMotorAdc[1].DivVal[mMotorAdc[0].DivNum] >= MAX_CURRENT_MOTOR) {
         mPtMotorCurrentCount[1]++;
         if(mPtMotorCurrentCount[1] > 30) {
+		    mMachineSta.motorPowerSta[MOTOR2_LOGIC_CHN] = MOTOR_POWER_DOWN_STA;
             HAL_GPIO_WritePin(MOTOR_PWR_CTRL2_GPIO_Port, MOTOR_PWR_CTRL2_Pin, GPIO_PIN_RESET);
             mPtMotorCurrentMax[5]++;
         }

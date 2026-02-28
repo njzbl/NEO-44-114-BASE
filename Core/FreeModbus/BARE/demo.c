@@ -81,12 +81,12 @@ static USHORT   usRegInputBuf[REG_INPUT_NREGS]=
 �����룺       �����ּĴ��� (0x03)��д�����Ĵ��� (0x06)��д����Ĵ��� (0x10)
 ��;��         ģ�������
 //-----------------------------------------------------------------*/
-#if (MACHINE_MODE == MACHINE_HW_MODE || MACHINE_MODE == MACHINE_YGDY_MODE || MACHINE_MODE == MACHINE_NO_MODE)  //华为和阳光电源，采用软件强拉常闭触点，更为科学。但是阳光电源实际取消的故障和状态两个干接点信号输出。
+#if (MODBUS_COMMUNICATION_ADDRESS_TYPE == MODBUS_REG_HOLDING_START_21)  //华为和阳光电源，采用软件强拉常闭触点，更为科学。但是阳光电源实际取消的故障和状态两个干接点信号输出。
 #define REG_HOLDING_START 0x0021 //���ּĴ�����ʼ��ַ 
 
 #endif
 
-#if(MACHINE_MODE == MACHINE_HY_MODE)
+#if(MODBUS_COMMUNICATION_ADDRESS_TYPE == MODBUS_REG_HOLDING_START_1)
 #define REG_HOLDING_START 0x0001 //���ּĴ�����ʼ��ַ 
 
 #endif
@@ -327,7 +327,7 @@ void InitModbus(void)
 void UpdataModbusAddr(void)
 {
     UpdataModbusAll();
-#if (MODBUS_CTRL == 1)
+#if (MODBUS_CTRL == PARAM_ENABLED)
     usRegInputBuf[NUMBER_CHANGE_ADDRESS_R_REG] = mCountSetModbusAddr;
     if(mCountSetModbusAddr >= 100) {
         return ;

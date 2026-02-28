@@ -40,7 +40,7 @@
 #define INVALID                         0
 #define VALID                           1
 
-#define PARAM_DISENABLED                0
+#define PARAM_DISABLED                0
 #define PARAM_ENABLED                   1
 
 #define TRUE                            1
@@ -121,6 +121,7 @@ typedef struct COUNT
   uint32_t motorCMD510BRunStaA;   //记录CMD510B直流无刷电机的百叶在一个检测周期内合理电流值的总数量
   uint32_t motorCMD510BRunStaB;   //记录CMD510B直流无刷电机的百叶在一个检测周期内合理电流值的总数量
   uint32_t motorCMD510BRunStaC;   //记录CMD510B直流无刷电机的百叶在一个检测周期内合理电流值的总数量
+  uint8_t doorSensor[MOTOR_BDC_NUMBER_MAX];   //  百叶关闭状态信号
 }stCOUNT;
 
 typedef struct DOOR_STA
@@ -153,6 +154,8 @@ typedef struct DOOR_STA
   int32_t doorPositionFinalA;
   int32_t doorPositionFinalB;
   int32_t doorPositionFinalC;
+  uint32_t doorSensorHSta[MOTOR_BDC_NUMBER_MAX];   //  百叶关闭状态信号
+  uint32_t doorSensorLSta[MOTOR_BDC_NUMBER_MAX];   //  百叶开启状态信号
 
 }stDOOR_STA;
 
@@ -179,6 +182,7 @@ typedef struct MACHINE_STA
   uint8_t activation;         //0： run    1： stop
   uint8_t faultSta;           //1：error   0:  OK
   uint8_t hBridgeSta;         //0: 将上下管都置于关闭状态   1:等待10ms保证上下管都完全关闭   2： 已打开一侧的下管   3： 异测的上下管都打开
+  uint8_t motorPowerSta[MOTOR_BDC_CURRENT_BUF_MAX];    //1：对应电机处于通电状态   0：对应电机处于断电状态
 }stMACHINE_STA;
 
 typedef struct FAN_STA
@@ -208,12 +212,12 @@ extern stMACHINE_STA mMachineSta;
 extern stMOTOR_BDC mMotorBDC;
 extern __IO uint32_t mOSTM16_SysTick20us_K;
 extern __IO uint32_t mOSTM16_SysTick10ms_K;
+extern __IO uint32_t mOSTM16_SysTick1ms_S;
 extern __IO uint32_t mOSTM16_SysTick20us_CMD510B_M_A;
 extern __IO uint32_t mOSTM16_SysTick20us_CMD510B_M_B;
 extern __IO uint32_t mOSTM16_SysTick20us_CMD510B_M_C;
 extern int mDoorRunNumSta;
 extern stMACHINE_MDBUS_STA mMachineModbusSta;
-// extern uint16_t mMotorCurTemp[1024];
 extern uint16_t mMotorCurCount;
 extern uint16_t mMotorCurCountFlag;
 
@@ -231,6 +235,10 @@ void getBDCMotorCur(void);
 void setBLDCMotor(uint8_t chn, uint8_t sta);
 extern void StartFan(void);
 extern void StopFan(void);
+
+// #if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_FB_NC_HW)
+// void getDoorSensorSta(void);
+// #endif
 // extern HAL_StatusTypeDef  AHT20GetStatusTempRH(stATH20DATA *ath20data);
 // extern HAL_StatusTypeDef  AHT20TransCmd(void);
 // extern unsigned char Calc_CRC8(unsigned char *message,unsigned char Num);

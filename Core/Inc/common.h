@@ -13,7 +13,6 @@ extern "C" {
 
 #define DETECT_FOREIGN_DISABLED             0
 #define DETECT_FOREIGN_ENABLED              1
-#define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //卡异物检测功能
 
 #define THIRD_MOTOR_DISABLED                0
 #define THIRD_MOTOR_ENABLED                 1
@@ -27,81 +26,151 @@ extern "C" {
 #define FAN_MODEL_AC_75W                  1
 #define FAN_MODEL_DC_100W                 2
 
+// 项目宏定义配置如下
+
+#define NORMALLY_OPEN                   0   //NO
+#define NORMALLY_CLOSE                  1   //NC
+
 #define DLK_TG_60W                      0       //迪洛克推杆电机，内部没有堵转电流保护
 #define CHENXIN_5840_3650               1       //辰鑫蜗涡轮杆电机 400350DW
 #define TZC36_5840_3650                 2       //万融蜗涡轮杆电机
 #define DLK_YLSZ23                      3       //迪洛克防爆款fg推杆电机，内部没有堵转电流保护
-#define DLK_YLSZ23_FB                   4       //迪洛克防爆款FB推杆电机,只反馈关紧百叶（电机完全伸出）的电平信号，内部没有堵转电流保护
+#define DLK_YLSZ23_FB                   4       //迪洛克防爆款FB推杆电机,只反馈关紧百叶（电机完全伸出）的电平信号，内部没有堵转电流保护，F/R推拉信号至少保持600ms才视为有效信号。
 #define WG_TG                           5       //微光推杆电机，内部没有堵转电流保护
 #define G_ROCH_D3Ex                     6       //基洛克防爆推杆电机 ，内部有堵转电流保护
-#define MOTOR_MODEL                     CHENXIN_5840_3650
+
+#define NEO_400350_DW_BASE              0
+#define NEO_320270_MAX_BASE             1
+#define NEO_400350_DLK_TG_60W_BASE      2
+#define NEO_400350_DLK_FB_NO_BASE       3       //常开反馈
+#define NEO_400350_DLK_FB_NC_HW         4       //常闭反馈， 华为版本,阳光电源版本
+#define NEO_400350_DLK_FB_NO_HY         5       //广州电力公司版本
+#define NEO_400350_DW_DCFAN             6       //辰鑫 + DC风扇
+
+#define MACHINE_TYPE_CUSTOMER           NEO_400350_DLK_FB_NC_HW
+
+#define MODBUS_REG_HOLDING_START_1      1
+#define MODBUS_REG_HOLDING_START_21     2
+
+
+
+#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DW_BASE)
+#define MOTOR_MODEL                         CHENXIN_5840_3650
+#define MODBUS_COMMUNICATION_ADDRESS_TYPE   MODBUS_REG_HOLDING_START_21
+#define MACHINE_FEEDBACK_MODE               NORMALLY_OPEN          //系统反馈的类型
+#define MODBUS_CTRL                         PARAM_DISABLED   //0: no modbus   1: enabled modbus
+#define STOP_FAN_CUR_CHECK                  0   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
+#define FG_CUR_TYPE                         0   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
+#define FAN_MODEL                           FAN_MODEL_AC_75W
+#define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+
+#endif
+
+#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DW_DCFAN)
+#define MOTOR_MODEL                         CHENXIN_5840_3650
+#define MODBUS_COMMUNICATION_ADDRESS_TYPE   MODBUS_REG_HOLDING_START_21
+#define MACHINE_FEEDBACK_MODE               NORMALLY_OPEN          //系统反馈的类型
+#define MODBUS_CTRL                         PARAM_DISABLED   //0: no modbus   1: enabled modbus
+#define STOP_FAN_CUR_CHECK                  0   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
+#define FG_CUR_TYPE                         0   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
+#define FAN_MODEL                           FAN_MODEL_DC_100W
+#define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+
+#endif
+
+#if (MACHINE_TYPE_CUSTOMER == NEO_320270_MAX_BASE)
+#define MOTOR_MODEL                         DLK_TG_60W
+#define MODBUS_COMMUNICATION_ADDRESS_TYPE   MODBUS_REG_HOLDING_START_21
+#define MACHINE_FEEDBACK_MODE               NORMALLY_OPEN          //系统反馈的类型
+#define MODBUS_CTRL                         PARAM_DISABLED   //0: no modbus   1: enabled modbus
+#define STOP_FAN_CUR_CHECK                  0   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
+#define FG_CUR_TYPE                         0   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
+#define FAN_MODEL                           FAN_MODEL_DC_100W
+#define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+
+#endif
+
+#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_60W_BASE)
+#define MOTOR_MODEL                         DLK_TG_60W
+#define MODBUS_COMMUNICATION_ADDRESS_TYPE   MODBUS_REG_HOLDING_START_21
+#define MACHINE_FEEDBACK_MODE               NORMALLY_OPEN          //系统反馈的类型
+#define MODBUS_CTRL                         PARAM_DISABLED   //0: no modbus   1: enabled modbus
+#define STOP_FAN_CUR_CHECK                  0   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
+#define FG_CUR_TYPE                         1   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
+#define FAN_MODEL                           FAN_MODEL_AC_75W
+#define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+
+#endif
+
+#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_FB_NO_BASE)
+#define MOTOR_MODEL                         DLK_YLSZ23_FB
+#define MODBUS_COMMUNICATION_ADDRESS_TYPE   MODBUS_REG_HOLDING_START_21
+#define MACHINE_FEEDBACK_MODE               NORMALLY_OPEN          //系统反馈的类型
+#define MODBUS_CTRL                         PARAM_DISABLED   //0: no modbus   1: enabled modbus
+#define STOP_FAN_CUR_CHECK                  0   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
+#define FG_CUR_TYPE                         1   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
+#define FAN_MODEL                           FAN_MODEL_AC_75W
+#define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+
+#endif
+
+#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_FB_NC_HW)
+#define MOTOR_MODEL                         DLK_YLSZ23_FB
+#define MODBUS_COMMUNICATION_ADDRESS_TYPE   MODBUS_REG_HOLDING_START_21
+#define MACHINE_FEEDBACK_MODE               NORMALLY_CLOSE          //系统反馈的类型
+#define MODBUS_CTRL                         PARAM_DISABLED   //0: no modbus   1: enabled modbus
+#define STOP_FAN_CUR_CHECK                  1   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
+#define FG_CUR_TYPE                         0   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
+#define FAN_MODEL                           FAN_MODEL_AC_75W
+#define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //卡异物检测功能
+
+#endif
+
+#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_FB_NO_HY)
+#define MOTOR_MODEL                         DLK_TG_60W
+#define MODBUS_COMMUNICATION_ADDRESS_TYPE   MODBUS_REG_HOLDING_START_1
+#define MACHINE_FEEDBACK_MODE               NORMALLY_OPEN          //系统反馈的类型
+#define MODBUS_CTRL                         PARAM_ENABLED   //0: no modbus   1: enabled modbus
+#define STOP_FAN_CUR_CHECK                  1   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
+#define FG_CUR_TYPE                         1   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
+#define FAN_MODEL                           FAN_MODEL_AC_75W
+#define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+
+#endif
+
+
+
 
 #if (MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_YLSZ23_FB)
 #define MAX_CURRENT_MOTOR               2625        //5A     这里的阈值8000为暂定值，需要测试
+#define DC_CURRENT_MIN		            150		//30W 电机：没有负载,不接电机时电流 12mA。有电机接百叶时电流基本都大于160mA ，堵转时电流1.6A~2.0A。
 
 #endif
 #if (MOTOR_MODEL == DLK_TG_60W || MOTOR_MODEL == G_ROCH_D3Ex || MOTOR_MODEL == TZC36_5840_3650 || MOTOR_MODEL == WG_TG)
 #define MAX_CURRENT_MOTOR               2625        //5A     这里的阈值5000为暂定值，需要测试 //#define MAX_CURRENT_MOTOR               5000        //9A     这里的阈值5000为暂定值，需要测试
 
+#define DC_CURRENT_MIN		            150		//30W 电机：没有负载,不接电机时电流 12mA。有电机接百叶时电流基本都大于160mA ，堵转时电流1.6A~2.0A。
+// #define DC_CURRENT_MAX		2000    //2A 电机处于开始堵转状态。
+
 #endif
 #if (MOTOR_MODEL == CHENXIN_5840_3650)
 #define MAX_CURRENT_MOTOR               2625        //5A
+#define DC_CURRENT_MIN		            50		//30W 电机：没有负载,不接电机时电流 12mA。有电机接百叶时电流基本都大于160mA ，堵转时电流1.6A~2.0A。
 
 #endif
-// 项目宏定义配置如下
-#define MACHINE_NO_MODE                 0   //常开触点机型
-#define MACHINE_YGDY_MODE               1   //阳光电源机型
-#define MACHINE_HW_MODE                 2   //华为机型
-#define MACHINE_HY_MODE                 3   //广州电力公司机型
 
 
-#define MACHINE_MODE                    MACHINE_NO_MODE
+
 
 #define DEBUG_MODEL                     0   //0: no debug
 #define LOOP_TEST                       0   //0: no loop   1: loop test
 #define MOTOR_TYPE                      1   //0：step motor  1: DC brushless motor
 
-#if (MACHINE_MODE == MACHINE_NO_MODE)
-#define MODBUS_CTRL                     PARAM_ENABLED   //0: no modbus   1: enabled modbus
-#define STOP_FAN_CUR_CHECK              0   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
-#define FG_CUR_TYPE                     1   //0:直流有刷电机用FG信号判定电机工作转态；  1:直流有刷电机用电流信号判定电机工作转态；
-#define FAN_MODEL                       FAN_MODEL_AC_75W
-
-#define DC_CURRENT_MIN		150		//30W 电机：没有负载,不接电机时电流 12mA。有电机接百叶时电流基本都大于160mA ，堵转时电流1.6A~2.0A。
-#define DC_CURRENT_MAX		2000    //2A 电机处于开始堵转状态。
-
-#define SOFTWARE_VERSION                105
-
-#endif
-
-#if (MACHINE_MODE == MACHINE_YGDY_MODE || MACHINE_MODE == MACHINE_HY_MODE)
-#define MODBUS_CTRL                     PARAM_ENABLED   //0: no modbus   1: enabled modbus
-#define STOP_FAN_CUR_CHECK              1   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
-#define FG_CUR_TYPE                     1   //0:直流有刷电机用FG信号判定电机工作转态；  1:直流有刷电机用电流信号判定电机工作转态；
-
-#define DC_CURRENT_MIN		150		//30W 电机：没有负载,不接电机时电流 12mA。有电机接百叶时电流基本都大于160mA ，堵转时电流1.6A~2.0A。
-#define DC_CURRENT_MAX		2000    //2A 电机处于开始堵转状态。
-
-#define SOFTWARE_VERSION                104
-
-#endif
-
-#if (MACHINE_MODE == MACHINE_HW_MODE)
-#define MODBUS_CTRL                     PARAM_DISENABLED   //0: no modbus   1: enabled modbus
-#define STOP_FAN_CUR_CHECK              0   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
-#define FG_CUR_TYPE                     0   //0:直流有刷电机用FG信号判定电机工作转态；  1:直流有刷电机用电流信号判定电机工作转态；
-
-#define DC_CURRENT_MIN		150		//30W 电机：没有负载,不接电机时电流 12mA。有电机接百叶时电流基本都大于160mA ，堵转时电流1.6A~2.0A。
-#define DC_CURRENT_MAX		5000    //5A 电机处于开始堵转状态。
-
-#define SOFTWARE_VERSION                104
-
-#endif
-
 
 
 #define MACHINE_STRUCTURE               0   //0: no protect   1: enabled protect
 
+#define SOFTWARE_VERSION                105
 #define HARDWARE_VERSION                102
 #define MODBUS_ADDRESS_DEFAULT          1
 
@@ -143,6 +212,10 @@ extern "C" {
                                                         //
 #define NEAREST_POSITION_DC_MOTOR_GB    250           //隔爆电机，关百叶允许的最大间隙。                                                       
 #define FAREST_POSITION_DC_MOTOR_GB     1600          //隔爆电机，开百叶允许的最大间隙。
+
+
+#define NEAREST_POSITION_DLK_MOTOR_GB    50           //迪洛克隔爆电机，关百叶允许的最大间隙。                                                       
+#define FAREST_POSITION_DLK_MOTOR_GB     1600          //迪洛克隔爆电机，开百叶允许的最大间隙。
 
 
 #define DOOR_POSITION_OPENED_SENSON     0           //接近开关传感器反馈的开门到位
@@ -303,8 +376,8 @@ extern "C" {
 //>>>>>>>>>>>>>>>>以下是直流有刷推杆电机和福佑风机的电流参数表>>>>>>>>>>>>>>>>>
 
 
-#define DC_MOTOR0_MA		VALID                   //PCB 位号 P5       //排风
-#define DC_MOTOR1_MA		VALID                 //PCB 位号 P6       //进风
+#define DC_MOTOR0_MA		VALID                   //PCB 位号 P5       //进风
+#define DC_MOTOR1_MA		VALID                   //PCB 位号 P6       //排风
 #define DC_MOTOR2_MA		INVALID                 //实际没有这个通道
 #define DC_MOTOR3_MA		INVALID                 //实际没有这个通道
 
@@ -313,7 +386,8 @@ extern "C" {
 
 
 //<<<<<<<<<<<<<<<<以上是直流有刷推杆电机和福佑风机的电流参数表>>>>>>>>>>>>>>>>
-
+#define MOTOR_POWER_DOWN_STA                0
+#define MOTOR_POWER_UP_STA                  1
 
 
 

@@ -22,6 +22,8 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN 0 */
+#include "common.h"
+#include "MainControl.h"
 extern uint8_t mBDCSta[2];
 extern uint8_t mMotorPowerEnabled;
 extern __IO uint32_t mCMD510BPowerFlagA;
@@ -139,6 +141,28 @@ void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 2 */
+
+// #if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_FB_NC_HW)
+// void fixInitGPIO(void)
+// {
+//   GPIO_InitTypeDef GPIO_InitStruct = {0};
+//   /*Configure GPIO pin : PtPin */
+//   GPIO_InitStruct.Pin = ON_STATE1_Pin|ON_STATE2_Pin;
+//   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+//   GPIO_InitStruct.Pull = GPIO_NOPULL;
+//   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+// }
+
+// GPIO_PinState getON_STATE1(void)
+// {
+//     return  HAL_GPIO_ReadPin(ON_STATE1_GPIO_Port, ON_STATE1_Pin);
+// }
+// GPIO_PinState getON_STATE2(void)
+// {
+//     return  HAL_GPIO_ReadPin(ON_STATE2_GPIO_Port, ON_STATE2_Pin);
+// }
+
+// #endif
 
 //sta == 1 set LED0_Pin
 //sat == 0 reset LED0_Pin
@@ -365,6 +389,7 @@ void setBDCMotorStop(uint8_t sn)
     switch (sn)
     {
     case 0: {
+        mMachineSta.motorPowerSta[MOTOR1_LOGIC_CHN] = MOTOR_POWER_DOWN_STA;
         HAL_GPIO_WritePin(MOTOR_PWR_CTRL1_GPIO_Port, MOTOR_PWR_CTRL1_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(FRONT1_GPIO_Port, FRONT1_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(BACK1_GPIO_Port, BACK1_Pin, GPIO_PIN_RESET);
@@ -372,6 +397,7 @@ void setBDCMotorStop(uint8_t sn)
         break;
     }
     case 1: {
+        mMachineSta.motorPowerSta[MOTOR2_LOGIC_CHN] = MOTOR_POWER_DOWN_STA;
         HAL_GPIO_WritePin(MOTOR_PWR_CTRL2_GPIO_Port, MOTOR_PWR_CTRL2_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(FRONT2_GPIO_Port, FRONT2_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(BACK2_GPIO_Port, BACK2_Pin, GPIO_PIN_RESET);

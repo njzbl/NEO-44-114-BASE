@@ -97,17 +97,26 @@ int fputc(int ch, FILE *f)
 
 void PrintfVersion(void)
 {
-#if (MACHINE_MODE == MACHINE_HW_MODE)//华为
-	printf("Software Version: NEO-400350-HW-V103-20240801\r\n");
+#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DW_BASE)  //常开触点机型
+	printf("Software Version: NEO_400350_DW_BASE-20241029\r\n");
 #endif
-#if (MACHINE_MODE == MACHINE_YGDY_MODE)//阳光电源
-	printf("Software Version: NEO-400350-YGDY-V103-20240801\r\n");
+#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DW_DCFAN)  //常开触点机型
+	printf("Software Version: NEO_400350_DW_DCFAN-20241029\r\n");
 #endif
-#if (MACHINE_MODE == MACHINE_NO_MODE)  //常开触点机型
-	printf("Software Version: NEO-400350-NO-V103-20241029-OM\r\n");
+#if(MACHINE_TYPE_CUSTOMER == NEO_320270_MAX_BASE)
+    printf("Software Version: NEO_320270_MAX_BASE-V103-20250526-OM\r\n");
 #endif
-#if(MACHINE_MODE == MACHINE_HY_MODE)
-    printf("Software Version: NEO-400350-HY-V103-20250526-OM\r\n");
+#if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_60W_BASE)
+    printf("Software Version: NEO_400350_DLK_TG_60W_BASE-V103-20250526-OM\r\n");
+#endif
+#if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_FB_NO_BASE)
+    printf("Software Version: NEO_400350_DLK_FB_NO_BASE-V103-20250526-OM\r\n");
+#endif
+#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_FB_NC_HW)//华为
+	printf("Software Version: NEO_400350_DLK_FB_NC_HW-V103-20260209\r\n");
+#endif
+#if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_FB_NO_HY)
+    printf("Software Version: NEO_400350_DLK_FB_NO_HY-V103-20250526-OM\r\n");
 #endif
 }
 
@@ -159,14 +168,18 @@ int main(void)
   MX_USART1_UART_Init();
   MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
+  
+#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_FB_NC_HW)
+  fixInitGPIO();
+#endif
   AHT20_IIC_GPIO_INIT();
   PrintfVersion();
   InitVar();
   setLED0(0);
-#if (MACHINE_MODE == MACHINE_HW_MODE || MACHINE_MODE == MACHINE_YGDY_MODE || MACHINE_MODE == MACHINE_HY_MODE)  //华为和阳光电源，采用软件强拉常闭触点，更为科学�??
+#if (MACHINE_FEEDBACK_MODE == NORMALLY_CLOSE)  //华为和阳光电源，采用软件强拉常闭触点，更为科学�??
   setSysErr(OUT_STATUS_CLOSE);
 #endif
-#if (MACHINE_MODE == MACHINE_NO_MODE)  //常开触点机型
+#if (MACHINE_FEEDBACK_MODE == NORMALLY_OPEN)  //常开触点机型
   setSysErr(OUT_STATUS_OPEN);
 #endif
   InitModbus();

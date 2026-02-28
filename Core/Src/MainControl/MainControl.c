@@ -55,8 +55,8 @@ extern uint32_t mMotorMaxCurrentTime[3];						//大电流时FG信号最大持续
 #if(MACHINE_DEBUG == DEBUG_ENABLED)
 extern __IO uint16_t mMotorCurMaxTotal[2][40];        			//测试代码需要的变量，正式程序中要屏蔽，减少堆的占用
 extern __IO uint16_t mMotorCurMaxNow[2][40];        			//测试代码需要的变量，正式程序中要屏蔽，减少堆的占用
+extern uint16_t mMotorCurNow[1000];
 #endif
-// uint16_t mMotorCurTemp[1024] = {0};
 uint16_t mMotorCurCount = 0;
 uint16_t mMotorCurCountFlag = 0;
 /*****************************************************************************************************************************
@@ -94,7 +94,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
   /* NOTE: This function should not be modified, when the callback is needed,
            the HAL_GPIO_EXTI_Falling_Callback could be implemented in the user file
    */
-#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == TZC36_5840_3650 || MOTOR_MODEL == DLK_YLSZ23)
+#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == TZC36_5840_3650 || MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_YLSZ23_FB)
   	if(GPIO_Pin == ON_STATE1_Pin) {
         if(mCMD510BPowerFlagA == 1) {       //增加了下拉电阻，这条限制语句就可以不用增加了，如果没有下拉电阻，那么在电机掉电后因为内部电容的存在，FG信号会缓慢的从高电平掉落到低电平，就是触发成千上万个FG脉冲信号。增加了下拉电阻可以非常有效的解决这个问题。
             return ;
@@ -121,7 +121,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
                 if(mDebugFlagPowerDownCMD510BA[1] == 0) {
 #if (MOTOR_MODEL == CHENXIN_5840_3650)
 				    setBDCMotorStop(0);      //   ZBL  20250418
-                    //  printf("PowerDownShadesMotorAAA() mCount.motosrCMD510BRunStaA = %d mOSTM16_SysTick20us_CMD510B_M_A = %d mDoorSta.nowDoorPositionCMD510BMA = %d \r\n",mCount.motorCMD510BRunStaA,mOSTM16_SysTick20us_CMD510B_M_A,mDoorSta.nowDoorPositionCMD510BMA);
+                    //  printf("PowerDownShadesMotorAAA()\r\n");
                 
 #endif
                     mDebugFlagPowerDownCMD510BA[1] = 1;
@@ -245,6 +245,8 @@ void InitVar(void)
 		mDoorSta.lastPositionCLoseDoor[i] = 0;
         mDoorSta.motorCurNum[i] = 0;
         motorCurTemp[i] = 0;
+		mDoorSta.doorSensorHSta[i] = 0;
+		mDoorSta.doorSensorLSta[i] = 0;
 	}
 	mKeySta.isNewKeyCmd = INVALID;
 	mKeySta.nowKeySta = UNCERTAIN;
@@ -269,6 +271,9 @@ void InitVar(void)
 		mMotorCurMaxTotal[1][i] = 0;        //测试代码需要的变量，正式程序中要屏蔽，减少堆的占用
 		mMotorCurMaxNow[0][i] = 0;        //测试代码需要的变量，正式程序中要屏蔽，减少堆的占用
 		mMotorCurMaxNow[1][i] = 0;        //测试代码需要的变量，正式程序中要屏蔽，减少堆的占用
+	}
+	for(int i = 0; i < 1000; i++) {
+		mMotorCurNow[i] = 0;
 	}
 #endif
 }
@@ -302,12 +307,11 @@ void InitNewKeyVar(uint8_t keySta)
 		mCount.motorRunPluseB[i] = 0;
 	}
 	if(keySta == OPEN_DOOR) {
-		printf("FG A,B,C = %d, %d, %d-  \r\n",mDoorSta.motorFG[0],mDoorSta.motorFG[1],mDoorSta.motorFG[2]);
 
-#if (MACHINE_MODE == MACHINE_YGDY_MODE || MACHINE_MODE == MACHINE_HW_MODE || MACHINE_MODE == MACHINE_NO_MODE)
+#if (MODBUS_COMMUNICATION_ADDRESS_TYPE == MODBUS_REG_HOLDING_START_21)
         mMachineModbusSta.machineWorkMode = RUNNINT_MODE;
 #endif
-#if (MACHINE_MODE == MACHINE_HY_MODE)
+#if (MODBUS_COMMUNICATION_ADDRESS_TYPE == MODBUS_REG_HOLDING_START_1)
         mMachineModbusSta.machineWorkMode = RUNNINT_MODE - 1;
 #endif
         mMachineModbusSta.fanSta = FAN_OPEN_MODE;
@@ -315,11 +319,10 @@ void InitNewKeyVar(uint8_t keySta)
         mMachineModbusSta.inWindowsSta = WINDOWS_OPEN_MODE;
 	}
 	else if(keySta == CLOSE_DOOR) {
-		printf("FG A,B,C = %d, %d, %d+  \r\n",mDoorSta.motorFG[0],mDoorSta.motorFG[1],mDoorSta.motorFG[2]);
-#if (MACHINE_MODE == MACHINE_YGDY_MODE || MACHINE_MODE == MACHINE_HW_MODE || MACHINE_MODE == MACHINE_NO_MODE)
+#if (MODBUS_COMMUNICATION_ADDRESS_TYPE == MODBUS_REG_HOLDING_START_21)
         mMachineModbusSta.machineWorkMode = WAITTING_MODE;
 #endif
-#if (MACHINE_MODE == MACHINE_HY_MODE)
+#if (MODBUS_COMMUNICATION_ADDRESS_TYPE == MODBUS_REG_HOLDING_START_1)
         mMachineModbusSta.machineWorkMode = WAITTING_MODE - 1;
 #endif
         mMachineModbusSta.fanSta = FAN_CLOSE_MODE;                      //上电时默认风扇处于关闭状态；
@@ -336,6 +339,8 @@ void InitNewKeyVar(uint8_t keySta)
 		mDoorSta.motorFG[i] = 0;
         mDoorSta.motorCurNum[i] = 0;
         motorCurTemp[i] = 0;
+		mDoorSta.doorSensorHSta[i] = 0;
+		mDoorSta.doorSensorLSta[i] = 0;
 		if(keySta == CLOSE_DOOR) {
 			if(mDoorSta.lastPositionCLoseDoor[i] > NEAREST_POSITION_DC_MOTOR_GB) {
 				mDoorSta.nowDoorPositionDCM[i] += (mDoorSta.lastPositionCLoseDoor[i] - (NEAREST_POSITION_DC_MOTOR_GB >> 1));  //这里是实测出的值。
@@ -364,18 +369,13 @@ void InitNewKeyVar(uint8_t keySta)
 	mOutputSta.motorS1 = MACHINE_OK;
 	// mOutputSta.fanS2 = MACHINE_OK;		//关风机时不要清除风机故障
 
-    // stATH20DATA ath20data;
-    // uint8_t crc = AHT20_GetTransData(&ath20data);
-    // printf("AHT20_GetTransData :%x_%d_%d ::crc = %d\r\n",ath20data.status,ath20data.RH,ath20data.temperature,crc);
-    // AHT20_SeqTrans();
-
-    // for(int i = 0; i < sizeof(mMotorCurTemp) / sizeof(uint16_t); i++)
-    //     mMotorCurTemp[i] = 0;
-	
 #if(MACHINE_DEBUG == DEBUG_ENABLED)
 	for(int i = 0; i < 40; i++) {
 		mMotorCurMaxNow[0][i] = 0;        //测试代码需要的变量，正式程序中要屏蔽，减少堆的占用
 		mMotorCurMaxNow[1][i] = 0;        //测试代码需要的变量，正式程序中要屏蔽，减少堆的占用
+	}
+	for(int i = 0; i < 1000; i++) {
+		mMotorCurNow[i] = 0;
 	}
 #endif
     mMotorCurCount = 0;
@@ -407,10 +407,15 @@ int MainControl(void)
 		// mMotorBDC.Doneflag = 0;  //允许下个周期开始检测电机电流		本硬件版本没有采用INA219采集电流
 	}
 	else {
-		//每10ms检测一次推杆电机电流，并且只在开百叶和关百叶的过程中才检测电流。这里要测试I2C总线的速度是否能跟得上
+		//每1ms检测一次推杆电机电流，并且只在开百叶和关百叶的过程中才检测电流。这里要测试I2C总线的速度是否能跟得上
 		if(mMachineSta.activation == RUN_STA) {
 			getBDCMotorCur();	//软件限流的参数和策略还没改好
+
+// #if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_FB_NC_HW)
+// 			getDoorSensorSta();
+// #endif
 		}
+
 		return retn;
 	}
     UpdataModbusAddr();
@@ -489,27 +494,9 @@ int MainControl(void)
         mKeyVal485 = KEY_VAL_INVALID;
 #endif
 
-#if (MODBUS_CTRL == 0)
+#if (MODBUS_CTRL == PARAM_DISABLED)
     mManualFlag == TRUE;
 #endif
-
-#if (MACHINE_MODE == MACHINE_NO_MODE || MACHINE_MODE == MACHINE_YGDY_MODE || MACHINE_MODE == MACHINE_HW_MODE)
-
-// //气感信号优先级高于485信号。只有在气感信号手动按钮状态为关闭百叶时，485信号才有效。
-//     if(mKeyValQG == KEY_VAL_OPEN_WIN) { // 气感要求开百叶
-//         mInputSta.start = KEY_VAL_OPEN_WIN;
-//     }
-//     else if(mKeyValQG == KEY_VAL_CLOSE_WIN && mManualFlag == TRUE) { //还在气感 控制周期内
-//         mInputSta.start = KEY_VAL_CLOSE_WIN;
-//     }
-//     else if(mKeyVal485 == KEY_VAL_OPEN_WIN) { //485要求开百叶
-//         mInputSta.start = KEY_VAL_OPEN_WIN;
-//     }
-//     else if(mKeyVal485 == KEY_VAL_CLOSE_WIN) {   //485要求关百叶
-//         mInputSta.start = KEY_VAL_CLOSE_WIN;
-//     }
-
-
 
 #if (MACHINE_POWER_LOSS_DETECT == PROTECTION_ENABLED)
     if(mPowerAdcB.CurrentVal < mPowerAdcB.ThresholdMin && mCount.initBackDoor > DELAY_7S) {      //上电7秒以后  ,断电自动关闭百叶。
@@ -530,52 +517,6 @@ int MainControl(void)
             printf("mKeySta.isNewKeyCmd = TRUE  CLOSE_DOOR  %d,%d \r\n",mKeyValQG, mKeyVal485);
         }
     }
-
-#endif
-#if (MACHINE_MODE == MACHINE_HY_MODE)
-
-    mAutoVal485 = getAutoStaModbus();
-    mTestVal485 = getTestStaModbus();
-
-    if(mNtc10KAdc.CurrentVal >= 35) {
-        mKeyValTemp = KEY_VAL_OPEN_WIN;
-    }
-    else if(mNtc10KAdc.CurrentVal <= 30) {
-        mKeyValTemp = KEY_VAL_CLOSE_WIN;
-    }
-
-    if(mTestVal485 == 0x01) {       //测试模式，只接受气感信号的命令
-        mInputSta.start = mKeyValQG;
-    }
-    else {
-        if(mAutoVal485 == 0x00) {     //自动模式，温度自动控制
-            if(mKeyValTemp == 0xff) {   //这里mKeyValTemp 有可能是 0xff的值
-                mInputSta.start = KEY_VAL_CLOSE_WIN;
-            }
-            else {
-                mInputSta.start = mKeyValTemp;
-            }
-        }
-        else {      //手动状态
-            mInputSta.start = mKeyVal485;
-        }
-    }
-
-	if(mInputSta.start == KEY_VAL_OPEN_WIN) {
-        if(mKeySta.nowKeySta != OPEN_DOOR) {
-            InitNewKeyVar(OPEN_DOOR);
-            printf("mKeySta.isNewKeyCmd = TRUE  OPEN_DOOR  %d,%d \r\n",mKeyValQG, mKeyVal485);
-        }
-    }
-	else if(mInputSta.start == KEY_VAL_CLOSE_WIN) {
-        if(mKeySta.nowKeySta != CLOSE_DOOR) {
-            InitNewKeyVar(CLOSE_DOOR);
-            printf("mKeySta.isNewKeyCmd = TRUE  CLOSE_DOOR  %d,%d \r\n",mKeyValQG, mKeyVal485);
-        }
-    }
-#endif
-	// printf(" --- mCount.loopTestCount = %d mInputSta.startQG= %d mKeySta.nextKeySta = %d\r\n",mCount.loopTestCount,mInputSta.startQG,mKeySta.nextKeySta);
-
 
 	//>>>>>>>>>>>>>>>>>>>>>>>>>>>>风机控制>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 	if(mKeySta.nextKeySta == OPEN_DOOR) {	//闭合气感信号，要求开窗、开风机
@@ -634,34 +575,62 @@ int MainControl(void)
 		}
 		else {
             
+//             uint32_t staA, staB;
+// #if (MACHINE_S1_S2_STYLE == MACHINE_400350DW_BASE || MACHINE_S1_S2_STYLE == MACHINE_400350DW_NC || MACHINE_S1_S2_STYLE == MACHINE_NO_ERR_SINGAL_EXFAN)
+//             staA = mCount.motorCMD510BRunStaA;
+//             staB = mCount.motorCMD510BRunStaB;
+// #if (DOOR_FOREIGN_OBJECT_DETECT == VALID)
+//             if(mDoorSta.doorPositionFinalA < (FARTHEST_POSITION_DC_B_MOTOR - 50)) {
+//                 staA = 0;
+//             }
+//             if(mDoorSta.doorPositionFinalB < (FARTHEST_POSITION_DC_B_MOTOR - 50)) {
+//                 staB = 0;
+//             }
+// #endif
+
+// #else
+//             staA = mCount.motorRunStaA;
+//             staB = mCount.motorRunStaB;
+// #endif
+
 #if (FG_CUR_TYPE == 0)  //0:直流有刷电机用FG信号判定电机工作转态；  1:直流有刷电机用电流信号判定电机工作转态；
 			uint8_t motorAllSta = 0;
-			for(i = 0; i < MOTOR_BDC_NUMBER_MAX; i++) {
-				if(mMotorBDC.motorBDCValid[i] == VALID) {
-					if(mDoorSta.motorFG[i] < 100) {
-						motorAllSta |= 1;
-					}
-					if(mKeySta.nowKeySta == OPEN_DOOR) {
-						if((mDoorSta.nowDoorPositionDCM[i] + mDoorSta.lastPositionCLoseDoor[i]) < FARTHEST_POSITION_DC_MOTOR_GB - FAREST_POSITION_DC_MOTOR_GB)		//开百叶报警的裕量留大一点。
-							motorAllSta |= 1;
-					}
-					else if(mKeySta.nowKeySta == CLOSE_DOOR) {
-						int32_t count = 1;
-						count = mDoorSta.countMidwayOpenDoor;
-						if(count > 0) {
-							count = count - 1;
-						}
-						if(mDoorSta.nowDoorPositionDCM[i] > NEAREST_POSITION_DC_MOTOR_GB + (count * 10)) {
-							motorAllSta |= 1;
-						}
-					}
-				}
-			}
-			// if(mCount.motorRunStaA < MOTOR_EFFICACY_NUM_MAX || mCount.motorRunStaB < MOTOR_EFFICACY_NUM_MAX) {
-			// 	motorAllSta |= 1;
+//>>>>>>>>>>>>>>>>>>>>>>>>以下是卡异物监测>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+			// for(i = 0; i < MOTOR_BDC_NUMBER_MAX; i++) {
+			// 	if(mMotorBDC.motorBDCValid[i] == VALID) {
+			// 		if(mDoorSta.motorFG[i] < 100) {
+			// 			motorAllSta |= 1;
+			// 		}
+			// 		if(mKeySta.nowKeySta == OPEN_DOOR) {
+			// 			if((mDoorSta.nowDoorPositionDCM[i] + mDoorSta.lastPositionCLoseDoor[i]) < FARTHEST_POSITION_DC_MOTOR_GB - FAREST_POSITION_DC_MOTOR_GB)		//开百叶报警的裕量留大一点。
+			// 				motorAllSta |= 1;
+			// 		}
+			// 		else if(mKeySta.nowKeySta == CLOSE_DOOR) {
+			// 			int32_t count = 1;
+			// 			count = mDoorSta.countMidwayOpenDoor;
+			// 			if(count > 0) {
+			// 				count = count - 1;
+			// 			}
+			// 			if(mDoorSta.nowDoorPositionDCM[i] > NEAREST_POSITION_DC_MOTOR_GB + (count * 10)) {
+			// 				motorAllSta |= 1;
+			// 			}
+			// 		}
+			// 	}
 			// }
-			if(motorAllSta != 0) {
-				mOutputSta.motorS1 = MACHINE_ERR;
+			// if(motorAllSta != 0) {
+			// 	mOutputSta.motorS1 = MACHINE_ERR;
+			// }
+			// else {
+			// 	mOutputSta.motorS1 = MACHINE_OK; 
+			// }
+			
+
+
+//<<<<<<<<<<<<<<<<<<<<<以上是卡异物监测<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+			if((mCount.motorCMD510BRunStaA < 100 && mMotorBDC.motorBDCValid[0] == VALID) 
+			|| (mCount.motorCMD510BRunStaB < 100 && mMotorBDC.motorBDCValid[1] == VALID)
+			|| (mCount.motorCMD510BRunStaC < 100 && mMotorBDC.motorBDCValid[2] == VALID)) {
+					mOutputSta.motorS1 = MACHINE_ERR;
 			}
 			else {
 				mOutputSta.motorS1 = MACHINE_OK;
@@ -675,6 +644,16 @@ int MainControl(void)
 					if(mDoorSta.motorCurNum[i] < 100) {		//正常情况下百叶跑完整个行程至少有2700个
 						motorAllSta |= 1;
 					}
+					
+#if (MACHINE_DETECT_FOREIGN == DETECT_FOREIGN_ENABLED)		//卡异物检测代码还未改好，要区分不同电机的实际情况,设定不同阈值
+
+#if (MOTOR_MODEL == DLK_YLSZ23_FB)
+					if(mDoorSta.motorCurNum[i] < FAREST_POSITION_DLK_MOTOR_GB && mKeySta.nowKeySta == OPEN_DOOR) {		//正常情况下百叶跑完整个行程至少有2700个
+						motorAllSta |= 1;
+					}
+#endif
+#endif
+
 				}
 			}
 			if(motorAllSta != 0) {
@@ -683,24 +662,26 @@ int MainControl(void)
 			else {
 				mOutputSta.motorS1 = MACHINE_OK;
 			}
-#if (MACHINE_DETECT_FOREIGN == DETECT_FOREIGN_ENABLED)
+#if (MACHINE_DETECT_FOREIGN == DETECT_FOREIGN_ENABLED)		//卡异物检测代码还未改好，要区分不同电机的实际情况,设定不同阈值
+
+#if (MOTOR_MODEL == CHENXIN_5840_3650)
             if((mDoorSta.doorPositionFinalA < (2080 - 200)) || (mDoorSta.doorPositionFinalB < (2080 - 200))) {	//测试的首台样机装配百叶后，总行程为2080左右个脉冲。实际代码这里一定是要修正的
                 mOutputSta.motorS1 = MACHINE_ERR;
             }
             // printf("mDoorSta.motorCurNum = %d,%d,%d motorCurTemp = %d,%d,%d\r\n",mDoorSta.motorCurNum[0],mDoorSta.motorCurNum[1],mDoorSta.motorCurNum[2],motorCurTemp[0],motorCurTemp[1],motorCurTemp[2]);
 #endif
+#if (MOTOR_MODEL == DLK_YLSZ23_FB)
+			if(mKeySta.nowKeySta == CLOSE_DOOR && (mDoorSta.doorSensorHSta[MOTOR1_LOGIC_CHN] < NEAREST_POSITION_DLK_MOTOR_GB || mDoorSta.doorSensorHSta[MOTOR2_LOGIC_CHN] < NEAREST_POSITION_DLK_MOTOR_GB)) {
+				mOutputSta.motorS1 = MACHINE_ERR;
+			}
+			printf("mDoorSta.motorCurNum = %d,%d,%d motorCurTemp = %d,%d,%d\r\n",mDoorSta.motorCurNum[0],mDoorSta.motorCurNum[1],mDoorSta.motorCurNum[2],motorCurTemp[0],motorCurTemp[1],motorCurTemp[2]);
+
+#endif
+#endif
 
 #endif
 		}
-		// printf("mCount.motorBDCRunSta[0-2] = %d_%d_%d\r\n",mCount.motorBDCRunSta[0],mCount.motorBDCRunSta[1],mCount.motorBDCRunSta[2]);
-		// printf("setOUT_C0(%d);  = %d, A,B = %d, %d\r\n",mOutputSta.motorS1, mCount.motorRunSta,mCount.motorRunStaA, mCount.motorRunStaB);
-		
-		// if(mKeySta.nowKeySta == CLOSE_DOOR) { //应该在关百叶的角度信号小于200时清零。
-		// 	printf("Close mDoorSta.motorFG A,B,C = %d, %d, %d ; DCMA,B = %d, %d, %d ; LAST,B = %d, %d, %d\r\n",mDoorSta.nowDoorPositionCMD510BMA,mDoorSta.nowDoorPositionCMD510BMB, mDoorSta.doorPositionFinalA,mDoorSta.nowDoorPositionDCM[0],mDoorSta.nowDoorPositionDCM[1],mDoorSta.nowDoorPositionDCM[2],mDoorSta.lastPositionCLoseDoor[0],mDoorSta.lastPositionCLoseDoor[1],mDoorSta.lastPositionCLoseDoor[2]);
-		// }
-		// else if(mKeySta.nowKeySta == OPEN_DOOR){
-		// 	printf("Open  mDoorSta.motorFG A,B,C = %d, %d, %d ; DCMA,B = %d, %d, %d ; LAST,B = %d, %d, %d\r\n",mDoorSta.nowDoorPositionCMD510BMA,mDoorSta.nowDoorPositionCMD510BMB, mDoorSta.doorPositionFinalA,mDoorSta.nowDoorPositionDCM[0],mDoorSta.nowDoorPositionDCM[1],mDoorSta.nowDoorPositionDCM[2],mDoorSta.lastPositionCLoseDoor[0],mDoorSta.lastPositionCLoseDoor[1],mDoorSta.lastPositionCLoseDoor[2]);
-		// }
+
 		if (mKeySta.nowKeySta == CLOSE_DOOR) { //应该在关百叶的角度信号小于200时清零。
 			for(i = 0; i < MOTOR_BDC_NUMBER_MAX; i++) {
 				if(mDoorSta.nowDoorPositionDCM[i] >= NEAREST_POSITION_DC_MOTOR_GB)
@@ -715,15 +696,18 @@ int MainControl(void)
 		// }
 		mCount.motor = delay_total_2 + 1;
 		mDoorSta.countMidwayOpenDoor = 0;
-        // for(int i = 0; i < 50; i++) {
-        //     printf("L%d-%d %d %d %d %d_%d %d %d %d %d__%d %d %d %d %d_%d %d %d %d %d\r\n",(i + 1)
-        //         ,mMotorCurTemp[0 + i * 20],mMotorCurTemp[1 + i * 20],mMotorCurTemp[2 + i * 20],mMotorCurTemp[3 + i * 20],mMotorCurTemp[4 + i * 20]
-        //         ,mMotorCurTemp[5 + i * 20],mMotorCurTemp[6 + i * 20],mMotorCurTemp[7 + i * 20],mMotorCurTemp[8 + i * 20],mMotorCurTemp[9 + i * 20]
-        //         ,mMotorCurTemp[10 + i * 20],mMotorCurTemp[11 + i * 20],mMotorCurTemp[12 + i * 20],mMotorCurTemp[13 + i * 20],mMotorCurTemp[14 + i * 20]
-        //         ,mMotorCurTemp[15 + i * 20],mMotorCurTemp[16 + i * 20],mMotorCurTemp[17 + i * 20],mMotorCurTemp[18 + i * 20],mMotorCurTemp[19 + i * 20]
-        //         );
-        // }
 #if(MACHINE_DEBUG == DEBUG_ENABLED)
+		for(int tempi = 0;tempi < 1000;tempi += 20) {
+			printf("%d%d0~%d%d0: %d_%d_%d_%d_%d %d_%d_%d_%d_%d  %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",tempi/100,(tempi/10)%10,(tempi+20)/100,((tempi+20)/10)%10,
+				mMotorCurNow[0 + tempi],mMotorCurNow[1 + tempi],mMotorCurNow[2 + tempi],mMotorCurNow[3 + tempi],mMotorCurNow[4 + tempi],
+				mMotorCurNow[5 + tempi],mMotorCurNow[6 + tempi],mMotorCurNow[7 + tempi],mMotorCurNow[8 + tempi],mMotorCurNow[9 + tempi],
+				mMotorCurNow[10 + tempi],mMotorCurNow[11 + tempi],mMotorCurNow[12 + tempi],mMotorCurNow[13 + tempi],mMotorCurNow[14 + tempi],
+				mMotorCurNow[15 + tempi],mMotorCurNow[16 + tempi],mMotorCurNow[17 + tempi],mMotorCurNow[18 + tempi],mMotorCurNow[19 + tempi]
+			);
+		}
+		printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! \r\n");
+
+
 		printf("mMotorCurMaxNow[0] 00 ~ 09: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
 			mMotorCurMaxNow[0][0],mMotorCurMaxNow[0][1],mMotorCurMaxNow[0][2],mMotorCurMaxNow[0][3],mMotorCurMaxNow[0][4],
 			mMotorCurMaxNow[0][5],mMotorCurMaxNow[0][6],mMotorCurMaxNow[0][7],mMotorCurMaxNow[0][8],mMotorCurMaxNow[0][9]);
@@ -794,12 +778,12 @@ int MainControl(void)
 				mOutputSta.fanS2 = MACHINE_ERR;
 			}
 
-#if(MOTOR_MODEL == DLK_TG_60W)          //25°C 电机推出时完全堵转，mMotorAdc[j].CurrentVal 瞬间最大值3275，然后逐渐降低最后一直稳定在2800左右，此时稳压电源读数为：2.6 ~ 2.8A ，在低温-30°C时小裴测试稳压电源读数2.9A
-            	printf("mOutputSta.fanS2 = %d; mCount.fanRunSta = %d mDoorSta.motorCurNum[0,1]=%d,%d mMotorAdc[0:2].CurrentVal = %d_%d_%d\r\n",mOutputSta.fanS2,mCount.fanRunSta,mDoorSta.motorCurNum[0],mDoorSta.motorCurNum[1],mMotorAdc[0].CurrentVal,mMotorAdc[1].CurrentVal,mMotorAdc[2].CurrentVal);
-#else
-				printf("mOutputSta.fanS2 = %d; mCount.fanRunSta = %d mDoorSta.motorCurNum[0,1]=%d,%d\r\n",mOutputSta.fanS2,mCount.fanRunSta,mDoorSta.motorCurNum[0],mDoorSta.motorCurNum[1]);
-#endif
 		}
+// #if(MOTOR_MODEL == DLK_TG_60W)          //25°C 电机推出时完全堵转，mMotorAdc[j].CurrentVal 瞬间最大值3275，然后逐渐降低最后一直稳定在2800左右，此时稳压电源读数为：2.6 ~ 2.8A ，在低温-30°C时小裴测试稳压电源读数2.9A
+//             	printf("mOutputSta.fanS2 = %d; mCount.fanRunSta = %d mDoorSta.motorCurNum[0,1]=%d,%d mMotorAdc[0:2].CurrentVal = %d_%d_%d\r\n",mOutputSta.fanS2,mCount.fanRunSta,mDoorSta.motorCurNum[0],mDoorSta.motorCurNum[1],mMotorAdc[0].CurrentVal,mMotorAdc[1].CurrentVal,mMotorAdc[2].CurrentVal);
+// #else
+// 				printf("mOutputSta.fanS2 = %d; mCount.fanRunSta = %d mDoorSta.motorCurNum[0,1]=%d,%d\r\n",mOutputSta.fanS2,mCount.fanRunSta,mDoorSta.motorCurNum[0],mDoorSta.motorCurNum[1]);
+// #endif
 #if (STOP_FAN_CUR_CHECK == 1)      
         else {
             if(mCount.fanRunSta >= 35) {    //如果全速旋转，这个值应该是50。
@@ -817,89 +801,87 @@ int MainControl(void)
 		mCount.fan = DELAY_5S; //当第一个6秒来到后，每1秒检测一次风机状态。
 
 
-#if (MACHINE_MODE == MACHINE_HW_MODE || MACHINE_MODE == MACHINE_YGDY_MODE || MACHINE_MODE == MACHINE_HY_MODE)  //华为和阳光电源，采用软件强拉常闭触点，更为科学。但是阳光电源实际取消的故障和状态两个干接点信号输出。
+#if (MACHINE_FEEDBACK_MODE == NORMALLY_CLOSE)  //华为和阳光电源，采用软件强拉常闭触点，更为科学。但是阳光电源实际取消的故障和状态两个干接点信号输出。
 		if(mOutputSta.motorS1 == MACHINE_OK && mOutputSta.fanS2 == MACHINE_OK) {		//这个if语句放在这里降低了代码的可移植性，在移植时特别要注意
-			printf("setSysErr(1);  ");      // 华为要求，正常时输出闭合状态
+			printf("mDoorSta.doorSensorLHSta[0:1] = %d_%d : %d_%d  setSysErr(1);  ",mDoorSta.doorSensorLSta[0],mDoorSta.doorSensorHSta[0],mDoorSta.doorSensorLSta[1],mDoorSta.doorSensorHSta[1]);      // 华为要求，正常时输出闭合状态
 			setSysErr(OUT_STATUS_CLOSE);
 		}
 		else {
-#if (MACHINE_MODE == MACHINE_HW_MODE || MACHINE_MODE == MACHINE_YGDY_MODE)
 			mMachineModbusSta.machineWorkMode = FAILURE_MODE;
-#endif
-			printf("setSysErr(0);  ");      // 华为要求，异常时输出断开状态
+			printf("mDoorSta.doorSensorLHSta[0:1] = %d_%d : %d_%d setSysErr(0);  ",mDoorSta.doorSensorLSta[0],mDoorSta.doorSensorHSta[0],mDoorSta.doorSensorLSta[1],mDoorSta.doorSensorHSta[1]);      // 华为要求，异常时输出断开状态
 			setSysErr(OUT_STATUS_OPEN);
 		}
 		if(mKeySta.nowKeySta == OPEN_DOOR) {
 			// printf("setSysSta(1); %d_%d  FAN_%d,%d,%d\r\n",mOutputSta.motorS1,mOutputSta.fanS2,mFanAdc.CurrentVal,mFanAdc.ThresholdMin,mFanAdc.ThresholdMax);
-			printf("setSysSta(1);\r\n");
+			printf("setSysSta(1);fan current:%d mA %d\r\n",mMachineModbusSta.fanCurrent,mFanAdc.CurrentVal);
 			setSysSta(1);
 		}
 		else {
-			printf("setSysSta(0);\r\n");
+			printf("setSysSta(0);fan current:%d mA %d\r\n",mMachineModbusSta.fanCurrent,mFanAdc.CurrentVal);
 			setSysSta(0);
 		}
 #endif
 
-#if (MACHINE_MODE == MACHINE_NO_MODE)  //MACHINE_QL_MODE，采用常开触点
+#if (MACHINE_FEEDBACK_MODE == NORMALLY_OPEN)  //MACHINE_QL_MODE，采用常开触点
 		if(mOutputSta.motorS1 == MACHINE_OK && mOutputSta.fanS2 == MACHINE_OK) {		//这个if语句放在这里降低了代码的可移植性，在移植时特别要注意
-			printf("setSysErr(0);  ");      // 正常时输出开路状态
+			// printf("setSysErr(0);  ");      // 正常时输出开路状态
 			setSysErr(OUT_STATUS_OPEN);
 		}
 		else {
 			mMachineModbusSta.machineWorkMode = FAILURE_MODE;
-			printf("setSysErr(1);  ");      // 异常时输出闭合状态
+			// printf("setSysErr(1);  ");      // 异常时输出闭合状态
 			setSysErr(OUT_STATUS_CLOSE);
 		}
 		if(mKeySta.nowKeySta == OPEN_DOOR) {
 			// printf("setSysSta(1); %d_%d  FAN_%d,%d,%d\r\n",mOutputSta.motorS1,mOutputSta.fanS2,mFanAdc.CurrentVal,mFanAdc.ThresholdMin,mFanAdc.ThresholdMax);
-			printf("setSysSta(1); mNtc10KAdc.CurrentVal = %d\r\n",mNtc10KAdc.CurrentVal);
+			// printf("setSysSta(1); mNtc10KAdc.CurrentVal = %d\r\n",mNtc10KAdc.CurrentVal);
 			setSysSta(1);
 		}
 		else {
-			printf("setSysSta(0); mNtc10KAdc.CurrentVal = %d\r\n",mNtc10KAdc.CurrentVal);
+			// printf("setSysSta(0); mNtc10KAdc.CurrentVal = %d\r\n",mNtc10KAdc.CurrentVal);
 			setSysSta(0);
 		}
 #endif
 #if(MACHINE_DEBUG == DEBUG_ENABLED)
 		printf("%d mCount.motorCMD510BRunStaA:B:C = %d_%d_%d\r\n",mKeySta.nowKeySta,mCount.motorCMD510BRunStaA,mCount.motorCMD510BRunStaB,mCount.motorCMD510BRunStaC);
-		printf("mMotorCurMaxNow[0] 00 ~ 09: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
-			mMotorCurMaxNow[0][0],mMotorCurMaxNow[0][1],mMotorCurMaxNow[0][2],mMotorCurMaxNow[0][3],mMotorCurMaxNow[0][4],
-			mMotorCurMaxNow[0][5],mMotorCurMaxNow[0][6],mMotorCurMaxNow[0][7],mMotorCurMaxNow[0][8],mMotorCurMaxNow[0][9]);
-		printf("mMotorCurMaxNow[0] 10 ~ 19: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
-			mMotorCurMaxNow[0][10],mMotorCurMaxNow[0][11],mMotorCurMaxNow[0][12],mMotorCurMaxNow[0][13],mMotorCurMaxNow[0][14],
-			mMotorCurMaxNow[0][15],mMotorCurMaxNow[0][16],mMotorCurMaxNow[0][17],mMotorCurMaxNow[0][18],mMotorCurMaxNow[0][19]);
-		printf("mMotorCurMaxNow[0] 20 ~ 29: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
-			mMotorCurMaxNow[0][20],mMotorCurMaxNow[0][21],mMotorCurMaxNow[0][22],mMotorCurMaxNow[0][23],mMotorCurMaxNow[0][24],
-			mMotorCurMaxNow[0][25],mMotorCurMaxNow[0][26],mMotorCurMaxNow[0][27],mMotorCurMaxNow[0][28],mMotorCurMaxNow[0][29]);
-		printf("mMotorCurMaxNow[1] 00 ~ 09: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
-			mMotorCurMaxNow[1][0],mMotorCurMaxNow[1][1],mMotorCurMaxNow[1][2],mMotorCurMaxNow[1][3],mMotorCurMaxNow[1][4],
-			mMotorCurMaxNow[1][5],mMotorCurMaxNow[1][6],mMotorCurMaxNow[1][7],mMotorCurMaxNow[1][8],mMotorCurMaxNow[1][9]);
-		printf("mMotorCurMaxNow[1] 10 ~ 19: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
-			mMotorCurMaxNow[1][10],mMotorCurMaxNow[1][11],mMotorCurMaxNow[1][12],mMotorCurMaxNow[1][13],mMotorCurMaxNow[1][14],
-			mMotorCurMaxNow[1][15],mMotorCurMaxNow[1][16],mMotorCurMaxNow[1][17],mMotorCurMaxNow[1][18],mMotorCurMaxNow[1][19]);
-		printf("mMotorCurMaxNow[1] 20 ~ 29: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
-			mMotorCurMaxNow[1][20],mMotorCurMaxNow[1][21],mMotorCurMaxNow[1][22],mMotorCurMaxNow[1][23],mMotorCurMaxNow[1][24],
-			mMotorCurMaxNow[1][25],mMotorCurMaxNow[1][26],mMotorCurMaxNow[1][27],mMotorCurMaxNow[1][28],mMotorCurMaxNow[1][29]);
-		printf("++++++++++++++++++++++++++++++++++++++++++++++++++++++ \r\n");
-		printf("mMotorCurMaxTotal[0] 00 ~ 09: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
-			mMotorCurMaxTotal[0][0],mMotorCurMaxTotal[0][1],mMotorCurMaxTotal[0][2],mMotorCurMaxTotal[0][3],mMotorCurMaxTotal[0][4],
-			mMotorCurMaxTotal[0][5],mMotorCurMaxTotal[0][6],mMotorCurMaxTotal[0][7],mMotorCurMaxTotal[0][8],mMotorCurMaxTotal[0][9]);
-		printf("mMotorCurMaxTotal[0] 10 ~ 19: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
-			mMotorCurMaxTotal[0][10],mMotorCurMaxTotal[0][11],mMotorCurMaxTotal[0][12],mMotorCurMaxTotal[0][13],mMotorCurMaxTotal[0][14],
-			mMotorCurMaxTotal[0][15],mMotorCurMaxTotal[0][16],mMotorCurMaxTotal[0][17],mMotorCurMaxTotal[0][18],mMotorCurMaxTotal[0][19]);
-		printf("mMotorCurMaxTotal[0] 20 ~ 29: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
-			mMotorCurMaxTotal[0][20],mMotorCurMaxTotal[0][21],mMotorCurMaxTotal[0][22],mMotorCurMaxTotal[0][23],mMotorCurMaxTotal[0][24],
-			mMotorCurMaxTotal[0][25],mMotorCurMaxTotal[0][26],mMotorCurMaxTotal[0][27],mMotorCurMaxTotal[0][28],mMotorCurMaxTotal[0][29]);
-		printf("mMotorCurMaxTotal[1] 00 ~ 09: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
-			mMotorCurMaxTotal[1][0],mMotorCurMaxTotal[1][1],mMotorCurMaxTotal[1][2],mMotorCurMaxTotal[1][3],mMotorCurMaxTotal[1][4],
-			mMotorCurMaxTotal[1][5],mMotorCurMaxTotal[1][6],mMotorCurMaxTotal[1][7],mMotorCurMaxTotal[1][8],mMotorCurMaxTotal[1][9]);
-		printf("mMotorCurMaxTotal[1] 10 ~ 19: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
-			mMotorCurMaxTotal[1][10],mMotorCurMaxTotal[1][11],mMotorCurMaxTotal[1][12],mMotorCurMaxTotal[1][13],mMotorCurMaxTotal[1][14],
-			mMotorCurMaxTotal[1][15],mMotorCurMaxTotal[1][16],mMotorCurMaxTotal[1][17],mMotorCurMaxTotal[1][18],mMotorCurMaxTotal[1][19]);
-		printf("mMotorCurMaxTotal[1] 20 ~ 29: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
-			mMotorCurMaxTotal[1][20],mMotorCurMaxTotal[1][21],mMotorCurMaxTotal[1][22],mMotorCurMaxTotal[1][23],mMotorCurMaxTotal[1][24],
-			mMotorCurMaxTotal[1][25],mMotorCurMaxTotal[1][26],mMotorCurMaxTotal[1][27],mMotorCurMaxTotal[1][28],mMotorCurMaxTotal[1][29]);
-		printf("****************************************************** \r\n");
+		// printf("mMotorCurMaxNow[0] 00 ~ 09: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+		// 	mMotorCurMaxNow[0][0],mMotorCurMaxNow[0][1],mMotorCurMaxNow[0][2],mMotorCurMaxNow[0][3],mMotorCurMaxNow[0][4],
+		// 	mMotorCurMaxNow[0][5],mMotorCurMaxNow[0][6],mMotorCurMaxNow[0][7],mMotorCurMaxNow[0][8],mMotorCurMaxNow[0][9]);
+		// printf("mMotorCurMaxNow[0] 10 ~ 19: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+		// 	mMotorCurMaxNow[0][10],mMotorCurMaxNow[0][11],mMotorCurMaxNow[0][12],mMotorCurMaxNow[0][13],mMotorCurMaxNow[0][14],
+		// 	mMotorCurMaxNow[0][15],mMotorCurMaxNow[0][16],mMotorCurMaxNow[0][17],mMotorCurMaxNow[0][18],mMotorCurMaxNow[0][19]);
+		// printf("mMotorCurMaxNow[0] 20 ~ 29: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+		// 	mMotorCurMaxNow[0][20],mMotorCurMaxNow[0][21],mMotorCurMaxNow[0][22],mMotorCurMaxNow[0][23],mMotorCurMaxNow[0][24],
+		// 	mMotorCurMaxNow[0][25],mMotorCurMaxNow[0][26],mMotorCurMaxNow[0][27],mMotorCurMaxNow[0][28],mMotorCurMaxNow[0][29]);
+		// printf("mMotorCurMaxNow[1] 00 ~ 09: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+		// 	mMotorCurMaxNow[1][0],mMotorCurMaxNow[1][1],mMotorCurMaxNow[1][2],mMotorCurMaxNow[1][3],mMotorCurMaxNow[1][4],
+		// 	mMotorCurMaxNow[1][5],mMotorCurMaxNow[1][6],mMotorCurMaxNow[1][7],mMotorCurMaxNow[1][8],mMotorCurMaxNow[1][9]);
+		// printf("mMotorCurMaxNow[1] 10 ~ 19: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+		// 	mMotorCurMaxNow[1][10],mMotorCurMaxNow[1][11],mMotorCurMaxNow[1][12],mMotorCurMaxNow[1][13],mMotorCurMaxNow[1][14],
+		// 	mMotorCurMaxNow[1][15],mMotorCurMaxNow[1][16],mMotorCurMaxNow[1][17],mMotorCurMaxNow[1][18],mMotorCurMaxNow[1][19]);
+		// printf("mMotorCurMaxNow[1] 20 ~ 29: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+		// 	mMotorCurMaxNow[1][20],mMotorCurMaxNow[1][21],mMotorCurMaxNow[1][22],mMotorCurMaxNow[1][23],mMotorCurMaxNow[1][24],
+		// 	mMotorCurMaxNow[1][25],mMotorCurMaxNow[1][26],mMotorCurMaxNow[1][27],mMotorCurMaxNow[1][28],mMotorCurMaxNow[1][29]);
+		// printf("++++++++++++++++++++++++++++++++++++++++++++++++++++++ \r\n");
+		// printf("mMotorCurMaxTotal[0] 00 ~ 09: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+		// 	mMotorCurMaxTotal[0][0],mMotorCurMaxTotal[0][1],mMotorCurMaxTotal[0][2],mMotorCurMaxTotal[0][3],mMotorCurMaxTotal[0][4],
+		// 	mMotorCurMaxTotal[0][5],mMotorCurMaxTotal[0][6],mMotorCurMaxTotal[0][7],mMotorCurMaxTotal[0][8],mMotorCurMaxTotal[0][9]);
+		// printf("mMotorCurMaxTotal[0] 10 ~ 19: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+		// 	mMotorCurMaxTotal[0][10],mMotorCurMaxTotal[0][11],mMotorCurMaxTotal[0][12],mMotorCurMaxTotal[0][13],mMotorCurMaxTotal[0][14],
+		// 	mMotorCurMaxTotal[0][15],mMotorCurMaxTotal[0][16],mMotorCurMaxTotal[0][17],mMotorCurMaxTotal[0][18],mMotorCurMaxTotal[0][19]);
+		// printf("mMotorCurMaxTotal[0] 20 ~ 29: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+		// 	mMotorCurMaxTotal[0][20],mMotorCurMaxTotal[0][21],mMotorCurMaxTotal[0][22],mMotorCurMaxTotal[0][23],mMotorCurMaxTotal[0][24],
+		// 	mMotorCurMaxTotal[0][25],mMotorCurMaxTotal[0][26],mMotorCurMaxTotal[0][27],mMotorCurMaxTotal[0][28],mMotorCurMaxTotal[0][29]);
+		// printf("mMotorCurMaxTotal[1] 00 ~ 09: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+		// 	mMotorCurMaxTotal[1][0],mMotorCurMaxTotal[1][1],mMotorCurMaxTotal[1][2],mMotorCurMaxTotal[1][3],mMotorCurMaxTotal[1][4],
+		// 	mMotorCurMaxTotal[1][5],mMotorCurMaxTotal[1][6],mMotorCurMaxTotal[1][7],mMotorCurMaxTotal[1][8],mMotorCurMaxTotal[1][9]);
+		// printf("mMotorCurMaxTotal[1] 10 ~ 19: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+		// 	mMotorCurMaxTotal[1][10],mMotorCurMaxTotal[1][11],mMotorCurMaxTotal[1][12],mMotorCurMaxTotal[1][13],mMotorCurMaxTotal[1][14],
+		// 	mMotorCurMaxTotal[1][15],mMotorCurMaxTotal[1][16],mMotorCurMaxTotal[1][17],mMotorCurMaxTotal[1][18],mMotorCurMaxTotal[1][19]);
+		// printf("mMotorCurMaxTotal[1] 20 ~ 29: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
+		// 	mMotorCurMaxTotal[1][20],mMotorCurMaxTotal[1][21],mMotorCurMaxTotal[1][22],mMotorCurMaxTotal[1][23],mMotorCurMaxTotal[1][24],
+		// 	mMotorCurMaxTotal[1][25],mMotorCurMaxTotal[1][26],mMotorCurMaxTotal[1][27],mMotorCurMaxTotal[1][28],mMotorCurMaxTotal[1][29]);
+		// printf("****************************************************** \r\n");
 #endif
 
 //>>>>>>>>>485 反馈状态>>>>>>>>>>>>> 
@@ -1004,6 +986,8 @@ void OpenExShades(void)
             mDebugFlagPowerDownCMD510BC[i] = 0;
         }
 #endif
+		mMachineSta.motorPowerSta[MOTOR1_LOGIC_CHN] = MOTOR_POWER_UP_STA;
+		mMachineSta.motorPowerSta[MOTOR2_LOGIC_CHN] = MOTOR_POWER_UP_STA;
 		mMachineSta.hBridgeSta = H_BRIDGE_STATE_OPEN_H;
 	}
 }
@@ -1040,6 +1024,8 @@ void CloseExShades(void)
             mDebugFlagPowerDownCMD510BC[i] = 0;
         }
 #endif
+		mMachineSta.motorPowerSta[MOTOR1_LOGIC_CHN] = MOTOR_POWER_UP_STA;
+		mMachineSta.motorPowerSta[MOTOR2_LOGIC_CHN] = MOTOR_POWER_UP_STA;
 		mMachineSta.hBridgeSta = H_BRIDGE_STATE_OPEN_H;
 	}
 }
@@ -1075,6 +1061,7 @@ void StartFan(void)
 {
 #if (FAN_MODEL == FAN_MODEL_AC_75W)
 	setACFanCtrl(1);
+	setDCFanCtrl(1);
 #endif
 #if (FAN_MODEL == FAN_MODEL_DC_100W)
 	setDCFanCtrl(1);
@@ -1086,6 +1073,7 @@ void StopFan(void)
 {
 #if (FAN_MODEL == FAN_MODEL_AC_75W)
 	setACFanCtrl(0);
+	setDCFanCtrl(0);
 #endif
 #if (FAN_MODEL == FAN_MODEL_DC_100W)
 	setDCFanCtrl(0);
@@ -1112,6 +1100,37 @@ void getBDCMotorCur(void)
 		}
 	}
 }
+
+// #if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_FB_NC_HW)
+// void getDoorSensorSta(void)
+// {
+// 	GPIO_PinState onState1,onState2;
+// 	if(mOSTM16_SysTick1ms_S < 50) {
+// 		return;
+// 	}
+// 	mOSTM16_SysTick1ms_S = 0;
+// 	if(mMachineSta.motorPowerSta[MOTOR1_LOGIC_CHN] == MOTOR_POWER_UP_STA) {
+// 		onState1 = getON_STATE1();
+// 		if(onState1 == GPIO_PIN_RESET) {
+// 			mDoorSta.doorSensorLSta[MOTOR1_LOGIC_CHN]++;
+// 		}
+// 		else {
+// 			if(mDoorSta.doorSensorLSta[MOTOR1_LOGIC_CHN] > 10)
+// 				mDoorSta.doorSensorHSta[MOTOR1_LOGIC_CHN]++;
+// 		}
+// 	}
+// 	if(mMachineSta.motorPowerSta[MOTOR2_LOGIC_CHN] == MOTOR_POWER_UP_STA) {
+// 		onState2 = getON_STATE2();
+// 		if(onState2 == GPIO_PIN_RESET) {
+// 			mDoorSta.doorSensorLSta[MOTOR2_LOGIC_CHN]++;
+// 		}
+// 		else {
+// 			if(mDoorSta.doorSensorLSta[MOTOR2_LOGIC_CHN] > 10)
+// 				mDoorSta.doorSensorHSta[MOTOR2_LOGIC_CHN]++;
+// 		}
+// 	}
+// }
+// #endif
 
 // void resetSampleFlag(void)
 // {	uint8_t i;

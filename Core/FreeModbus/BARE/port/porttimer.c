@@ -37,6 +37,7 @@ extern TIM_HandleTypeDef htim16;
 __IO uint32_t mOSTM16_SysTick20us_A = 0;
 __IO uint32_t mOSTM16_SysTick20us_K = 0;
 __IO uint32_t mOSTM16_SysTick10ms_K = 0;
+__IO uint32_t mOSTM16_SysTick1ms_S = 0;
 __IO uint32_t mOSTM16_SysTick20us_CMD510B_M_A = 0;
 __IO uint32_t mOSTM16_SysTick20us_CMD510B_M_B = 0;
 __IO uint32_t mOSTM16_SysTick20us_CMD510B_M_C = 0;
@@ -53,9 +54,10 @@ __IO uint8_t mDebugFlagPowerDownCMD510BC[5];
 //                                 ,250,250,250,250,250,250,250,250,250,250};      //400阈值对应电流： 230 ~ 342 （438mA ~ 651mA）
 // const uint32_t FG_THRESHOLD[THRESHOLD_LEN] = {1200,900,750,600,500,400,250,250,250,250
 //                                 ,250,250,250,250,250,250,250,250,250,250};      //400阈值对应电流： 230 ~ 342 （438mA ~ 651mA）
-const uint32_t FG_THRESHOLD[THRESHOLD_LEN] = {1200,1200,1200,1200,1200,1200,1200,1200,1200,1200
+const uint32_t FG_THRESHOLD[THRESHOLD_LEN] = {1200,1200,1200,1200,1200,1200,1200,1200,1200,1200         //-30°C辰鑫电机可以一次性开启（电流值和常温差不多），-35°C只能走1个FG（1200参数）电流并没有超过-30°C的最大值，是超过1200时间，断的电如果改大1200，电流会激增，导致堵转时齿轮断裂。说明油脂在低于-30°C时发生了剧烈的变化。
                                 ,1200,1200,1200,1200,1200,1200,1200,1200,1200,1200
-								,1200,1200,1200,1200,1200,1200,1200,1200,1200,300};                 //许昌现场的状态： 600 关紧，700开启（配1.5mm百叶）。现在是： 600关紧，800开启（配1.0mm百叶）
+								,1200,1200,1200,1200,1200,1200,1200,1200,1200,400};                 //许昌现场的状态： 600 关紧，700开启（配1.5mm百叶）。现在是： 600关紧，800开启（配1.0mm百叶）
+                                                                                                    //20us：400 关紧参数，-40°C一次性开启。20000+次常温老化正常。
 #endif
 
 //行程20mm 速度9mm/s  FG信号不用上拉电阻，5V输出
@@ -116,6 +118,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   	if(htim->Instance == TIM16) {
 		mOSTM16_SysTick20us_A++;
 		mOSTM16_SysTick20us_K++;
+        mOSTM16_SysTick1ms_S++;
 		mOSTM16_SysTick20us_CMD510B_M_A++;
 		mOSTM16_SysTick20us_CMD510B_M_B++;
 		mOSTM16_SysTick20us_CMD510B_M_C++;
