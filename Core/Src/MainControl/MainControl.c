@@ -41,12 +41,8 @@ uint8_t mKeyValQG = KEY_VAL_INVALID, mKeyVal485 = KEY_VAL_INVALID, mKeyValTemp =
 int32_t motorCurTemp[MOTOR_BDC_NUMBER_MAX]; 
 uint8_t mBDCSta[2] = {0};           //0: 初始状态 1：允许开启状态  2：允许关闭状态
 uint8_t mMotorPowerEnabled = 0;     //刚开机时禁止推杆电机供电，这样可以采用0电流时的电平。
-__IO uint32_t mCMD510BPowerFlagA = 0;
-__IO uint32_t mCMD510BPowerFlagB = 0;
-__IO uint32_t mCMD510BPowerFlagC = 0;
-extern __IO uint8_t mDebugFlagPowerDownCMD510BA[5];
-extern __IO uint8_t mDebugFlagPowerDownCMD510BB[5];
-extern __IO uint8_t mDebugFlagPowerDownCMD510BC[5];
+__IO uint32_t mCMD510BPowerFlag[MOTOR_BDC_NUMBER_MAX] = {0};
+extern __IO uint8_t mDebugFlagPowerDownCMD510B[MOTOR_BDC_NUMBER_MAX][5];
 
 extern __IO uint32_t mPtMotorCurrentMax[30];
 extern __IO uint8_t mPtMotorCurrentCount[3];
@@ -95,123 +91,53 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
            the HAL_GPIO_EXTI_Falling_Callback could be implemented in the user file
    */
 #if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == TZC36_5840_3650 || MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_YLSZ23_FB)
-  	if(GPIO_Pin == ON_STATE1_Pin) {
-        if(mCMD510BPowerFlagA == 1) {       //增加了下拉电阻，这条限制语句就可以不用增加了，如果没有下拉电阻，那么在电机掉电后因为内部电容的存在，FG信号会缓慢的从高电平掉落到低电平，就是触发成千上万个FG脉冲信号。增加了下拉电阻可以非常有效的解决这个问题。
-            return ;
-        }
-#if (MOTOR_MODEL == CHENXIN_5840_3650)
-		mMotorMaxCurrentTime[0] = 0;		//大电流时FG信号最大持续时间
-#endif
-
-#if (MOTOR_MODEL == TZC36_5840_3650)
-        if(mCount.motor > 200) {      //因为万融电机,前500ms内FG就没有
-            mCount.motorCMD510BRunStaA++;
-        }
-#else
-        if(mCount.motor > 1) {      //因为14米长线时,前50ms内FG不稳定
-            mCount.motorCMD510BRunStaA++;
-        }
-#endif
-        mDoorSta.doorPositionFinalA++;
-		mOSTM16_SysTick20us_CMD510B_M_A = 0;	//clear Motor A pluse count, if the number over 500ms is NG.
-		if(mKeySta.nowKeySta == OPEN_DOOR) {
-			mDoorSta.nowDoorPositionCMD510BMA++;
-			if(mDoorSta.nowDoorPositionCMD510BMA >= FARTHEST_POSITION_DC_B_MOTOR) {
-
-                if(mDebugFlagPowerDownCMD510BA[1] == 0) {
-#if (MOTOR_MODEL == CHENXIN_5840_3650)
-				    setBDCMotorStop(0);      //   ZBL  20250418
-                    //  printf("PowerDownShadesMotorAAA()\r\n");
-                
-#endif
-                    mDebugFlagPowerDownCMD510BA[1] = 1;
-                }
-			}
-		}
-		else if(mKeySta.nowKeySta == CLOSE_DOOR) {	//关百叶时 通过堵转保护限制位置。
-			mDoorSta.nowDoorPositionCMD510BMA--;
-			if(mDoorSta.nowDoorPositionCMD510BMA <= 0) {
-				mDoorSta.nowDoorPositionCMD510BMA = 0;
-			}
-		}
-	}
-	else if(GPIO_Pin == ON_STATE2_Pin) {
-        if(mCMD510BPowerFlagB == 1) {       //增加了下拉电阻，这条限制语句就可以不用增加了
-            return ;
-        }
-#if (MOTOR_MODEL == CHENXIN_5840_3650)
-		mMotorMaxCurrentTime[1] = 0;		//大电流时FG信号最大持续时间
-#endif
-
-#if (MOTOR_MODEL == TZC36_5840_3650)
-        if(mCount.motor > 200) {      //因为万融电机,前500ms内FG就没有
-            mCount.motorCMD510BRunStaB++;
-        }
-#else
-        if(mCount.motor > 1) {      //因为14米长线时,前50ms内FG不稳定
-            mCount.motorCMD510BRunStaB++;
-        }
-#endif
-        mDoorSta.doorPositionFinalB++;
-		mOSTM16_SysTick20us_CMD510B_M_B = 0;	//clear Motor B pluse count, if the number over 500ms is NG.
-		if(mKeySta.nowKeySta == OPEN_DOOR) {
-			mDoorSta.nowDoorPositionCMD510BMB++;
-			if(mDoorSta.nowDoorPositionCMD510BMB >= FARTHEST_POSITION_DC_B_MOTOR) {
-                if(mDebugFlagPowerDownCMD510BB[1] == 0) {
-                    
-#if (MOTOR_MODEL == CHENXIN_5840_3650)
-				    setBDCMotorStop(1);    //   ZBL  20250418
-#endif
-                    mDebugFlagPowerDownCMD510BB[1] = 1;
-                }
-			}
-		}
-		else if(mKeySta.nowKeySta == CLOSE_DOOR) {
-			mDoorSta.nowDoorPositionCMD510BMB--;
-			if(mDoorSta.nowDoorPositionCMD510BMB <= 0) {
-				mDoorSta.nowDoorPositionCMD510BMB = 0;
-			}
-				
-		}
-	}
 	
+	
+  	if(GPIO_Pin == ON_STATE1_Pin) {
+		mDoorSta.motorCh = 0;
+	}	
+	else if(GPIO_Pin == ON_STATE2_Pin) {
+		mDoorSta.motorCh = 1;
+	}
 	else if(GPIO_Pin == FAN_FG_Pin) {
-        if(mCMD510BPowerFlagC == 1) {       //增加了下拉电阻，这条限制语句就可以不用增加了
-            return ;
-        }
+		mDoorSta.motorCh = 3;
+	}
+
+	if(mCMD510BPowerFlag[mDoorSta.motorCh] == 1) {       //增加了下拉电阻，这条限制语句就可以不用增加了，如果没有下拉电阻，那么在电机掉电后因为内部电容的存在，FG信号会缓慢的从高电平掉落到低电平，就是触发成千上万个FG脉冲信号。增加了下拉电阻可以非常有效的解决这个问题。
+		return ;
+	}
 #if (MOTOR_MODEL == CHENXIN_5840_3650)
-		mMotorMaxCurrentTime[2] = 0;		//大电流时FG信号最大持续时间
+	mMotorMaxCurrentTime[mDoorSta.motorCh] = 0;		//大电流时FG信号最大持续时间
 #endif
 
 #if (MOTOR_MODEL == TZC36_5840_3650)
-        if(mCount.motor > 200) {      //因为万融电机,前500ms内FG就没有
-            mCount.motorCMD510BRunStaC++;
-        }
+	if(mCount.motor > 200) {      //因为万融电机,前500ms内FG就没有
+		mCount.motorCMD510BRunSta[mDoorSta.motorCh]++;
+	}
 #else
-        if(mCount.motor > 1) {      //因为14米长线时,前50ms内FG不稳定
-            mCount.motorCMD510BRunStaC++;
-        }
+	if(mCount.motor > 1) {      //因为14米长线时,前50ms内FG不稳定
+		mCount.motorCMD510BRunSta[mDoorSta.motorCh]++;
+	}
 #endif
-        mDoorSta.doorPositionFinalC++;
-		mOSTM16_SysTick20us_CMD510B_M_C = 0;	//clear Motor B pluse count, if the number over 500ms is NG.
-		if(mKeySta.nowKeySta == OPEN_DOOR) {
-			mDoorSta.nowDoorPositionCMD510BMC++;
-			if(mDoorSta.nowDoorPositionCMD510BMC >= FARTHEST_POSITION_DC_B_MOTOR) {
-                if(mDebugFlagPowerDownCMD510BC[1] == 0) {
-                    
+	mDoorSta.doorPositionFinal[mDoorSta.motorCh]++;
+	mOSTM16_SysTick20us_CMD510B_M[mDoorSta.motorCh] = 0;	//clear Motor A pluse count, if the number over 500ms is NG.
+	if(mKeySta.nowKeySta == OPEN_DOOR) {
+		mDoorSta.nowDoorPositionCMD510BM[mDoorSta.motorCh]++;
+		if(mDoorSta.nowDoorPositionCMD510BM[mDoorSta.motorCh] >= FARTHEST_POSITION_DC_B_MOTOR) {
+
+			if(mDebugFlagPowerDownCMD510B[mDoorSta.motorCh][1] == 0) {
 #if (MOTOR_MODEL == CHENXIN_5840_3650)
-				    setBDCMotorStop(2);    //   ZBL  20250418
+				setBDCMotorStop(mDoorSta.motorCh);      //   ZBL  20250418
+				//  printf("PowerDownShadesMotorAAA()\r\n");
 #endif
-                    mDebugFlagPowerDownCMD510BC[1] = 1;
-                }
+				mDebugFlagPowerDownCMD510B[mDoorSta.motorCh][1] = 1;
 			}
 		}
-		else if(mKeySta.nowKeySta == CLOSE_DOOR) {
-			mDoorSta.nowDoorPositionCMD510BMC--;
-			if(mDoorSta.nowDoorPositionCMD510BMC <= 0) {
-				mDoorSta.nowDoorPositionCMD510BMC = 0;
-			}
-				
+	}
+	else if(mKeySta.nowKeySta == CLOSE_DOOR) {	//关百叶时 通过堵转保护限制位置。
+		mDoorSta.nowDoorPositionCMD510BM[mDoorSta.motorCh]--;
+		if(mDoorSta.nowDoorPositionCMD510BM[mDoorSta.motorCh] <= 0) {
+			mDoorSta.nowDoorPositionCMD510BM[mDoorSta.motorCh] = 0;
 		}
 	}
 
@@ -296,12 +222,12 @@ void InitNewKeyVar(uint8_t keySta)
 	mCount.motorRunSta = 0;
 	mCount.motorRunStaA = 0;
 	mCount.motorRunStaB = 0;
-	mCount.motorCMD510BRunStaA = 0;
-	mCount.motorCMD510BRunStaB = 0;
-	mCount.motorCMD510BRunStaC = 0;
+	mCount.motorCMD510BRunSta[0] = 0;
+	mCount.motorCMD510BRunSta[1] = 0;
+	mCount.motorCMD510BRunSta[2] = 0;
 	mCount.motorRunPluseIndex = 0;
-    mDoorSta.doorPositionFinalA = 0;
-    mDoorSta.doorPositionFinalB = 0;
+    mDoorSta.doorPositionFinal[0] = 0;
+    mDoorSta.doorPositionFinal[1] = 0;
 	for(int i = 0;i < MOTOR_RUN_PLUSE_INDEX_MAX;i++) {
 		mCount.motorRunPluseA[i] = 0;
 		mCount.motorRunPluseB[i] = 0;
@@ -577,13 +503,13 @@ int MainControl(void)
             
 //             uint32_t staA, staB;
 // #if (MACHINE_S1_S2_STYLE == MACHINE_400350DW_BASE || MACHINE_S1_S2_STYLE == MACHINE_400350DW_NC || MACHINE_S1_S2_STYLE == MACHINE_NO_ERR_SINGAL_EXFAN)
-//             staA = mCount.motorCMD510BRunStaA;
-//             staB = mCount.motorCMD510BRunStaB;
+//             staA = mCount.motorCMD510BRunSta[0];
+//             staB = mCount.motorCMD510BRunSta[1];
 // #if (DOOR_FOREIGN_OBJECT_DETECT == VALID)
-//             if(mDoorSta.doorPositionFinalA < (FARTHEST_POSITION_DC_B_MOTOR - 50)) {
+//             if(mDoorSta.doorPositionFinal[0] < (FARTHEST_POSITION_DC_B_MOTOR - 50)) {
 //                 staA = 0;
 //             }
-//             if(mDoorSta.doorPositionFinalB < (FARTHEST_POSITION_DC_B_MOTOR - 50)) {
+//             if(mDoorSta.doorPositionFinal[1] < (FARTHEST_POSITION_DC_B_MOTOR - 50)) {
 //                 staB = 0;
 //             }
 // #endif
@@ -627,9 +553,9 @@ int MainControl(void)
 
 
 //<<<<<<<<<<<<<<<<<<<<<以上是卡异物监测<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-			if((mCount.motorCMD510BRunStaA < 100 && mMotorBDC.motorBDCValid[0] == VALID) 
-			|| (mCount.motorCMD510BRunStaB < 100 && mMotorBDC.motorBDCValid[1] == VALID)
-			|| (mCount.motorCMD510BRunStaC < 100 && mMotorBDC.motorBDCValid[2] == VALID)) {
+			if((mCount.motorCMD510BRunSta[0] < 100 && mMotorBDC.motorBDCValid[0] == VALID) 
+			|| (mCount.motorCMD510BRunSta[1] < 100 && mMotorBDC.motorBDCValid[1] == VALID)
+			|| (mCount.motorCMD510BRunSta[2] < 100 && mMotorBDC.motorBDCValid[2] == VALID)) {
 					mOutputSta.motorS1 = MACHINE_ERR;
 			}
 			else {
@@ -665,7 +591,7 @@ int MainControl(void)
 #if (MACHINE_DETECT_FOREIGN == DETECT_FOREIGN_ENABLED)		//卡异物检测代码还未改好，要区分不同电机的实际情况,设定不同阈值
 
 #if (MOTOR_MODEL == CHENXIN_5840_3650)
-            if((mDoorSta.doorPositionFinalA < (2080 - 200)) || (mDoorSta.doorPositionFinalB < (2080 - 200))) {	//测试的首台样机装配百叶后，总行程为2080左右个脉冲。实际代码这里一定是要修正的
+            if((mDoorSta.doorPositionFinal[0] < (2080 - 200)) || (mDoorSta.doorPositionFinal[1] < (2080 - 200))) {	//测试的首台样机装配百叶后，总行程为2080左右个脉冲。实际代码这里一定是要修正的
                 mOutputSta.motorS1 = MACHINE_ERR;
             }
             // printf("mDoorSta.motorCurNum = %d,%d,%d motorCurTemp = %d,%d,%d\r\n",mDoorSta.motorCurNum[0],mDoorSta.motorCurNum[1],mDoorSta.motorCurNum[2],motorCurTemp[0],motorCurTemp[1],motorCurTemp[2]);
@@ -843,7 +769,7 @@ int MainControl(void)
 		}
 #endif
 #if(MACHINE_DEBUG == DEBUG_ENABLED)
-		printf("%d mCount.motorCMD510BRunStaA:B:C = %d_%d_%d\r\n",mKeySta.nowKeySta,mCount.motorCMD510BRunStaA,mCount.motorCMD510BRunStaB,mCount.motorCMD510BRunStaC);
+		printf("%d mCount.motorCMD510BRunSta[0]:B:C = %d_%d_%d\r\n",mKeySta.nowKeySta,mCount.motorCMD510BRunSta[0],mCount.motorCMD510BRunSta[1],mCount.motorCMD510BRunSta[2]);
 		// printf("mMotorCurMaxNow[0] 00 ~ 09: %d_%d_%d_%d_%d %d_%d_%d_%d_%d \r\n",
 		// 	mMotorCurMaxNow[0][0],mMotorCurMaxNow[0][1],mMotorCurMaxNow[0][2],mMotorCurMaxNow[0][3],mMotorCurMaxNow[0][4],
 		// 	mMotorCurMaxNow[0][5],mMotorCurMaxNow[0][6],mMotorCurMaxNow[0][7],mMotorCurMaxNow[0][8],mMotorCurMaxNow[0][9]);
@@ -974,17 +900,13 @@ void OpenExShades(void)
 		// setBLDCMotor(MOTOR2_LOGIC_CHN, 0);  	//0:辰鑫异常逻辑			//
 		setBDCMotorForward(MOTOR1_LOGIC_CHN);
 		setBDCMotorForward(MOTOR2_LOGIC_CHN);
-        mCount.motorCMD510BRunStaA = 0;
-        mCount.motorCMD510BRunStaB = 0;
-        mCount.motorCMD510BRunStaC = 0;
-        mOSTM16_SysTick20us_CMD510B_M_A = 0;
-        mOSTM16_SysTick20us_CMD510B_M_B = 0;
-        mOSTM16_SysTick20us_CMD510B_M_C = 0;
-        for(int i = 0; i < 5; i++) {
-            mDebugFlagPowerDownCMD510BA[i] = 0;
-            mDebugFlagPowerDownCMD510BB[i] = 0;
-            mDebugFlagPowerDownCMD510BC[i] = 0;
-        }
+		for(int i = 0; i < MOTOR_BDC_NUMBER_MAX;i++) {
+			mCount.motorCMD510BRunSta[i] = 0;
+        	mOSTM16_SysTick20us_CMD510B_M[i] = 0;
+			for(int j = 0; j < 5;j++) {
+            	mDebugFlagPowerDownCMD510B[i][j] = 0;
+			}
+		}
 #endif
 		mMachineSta.motorPowerSta[MOTOR1_LOGIC_CHN] = MOTOR_POWER_UP_STA;
 		mMachineSta.motorPowerSta[MOTOR2_LOGIC_CHN] = MOTOR_POWER_UP_STA;
@@ -1012,17 +934,13 @@ void CloseExShades(void)
 		// setBLDCMotor(MOTOR2_LOGIC_CHN, 1);  	//1:辰鑫异常逻辑		//
 		setBDCMotorForward(MOTOR1_LOGIC_CHN);
 		setBDCMotorForward(MOTOR2_LOGIC_CHN);
-        mCount.motorCMD510BRunStaA = 0;
-        mCount.motorCMD510BRunStaB = 0;
-        mCount.motorCMD510BRunStaC = 0;
-        mOSTM16_SysTick20us_CMD510B_M_A = 0;
-        mOSTM16_SysTick20us_CMD510B_M_B = 0;
-        mOSTM16_SysTick20us_CMD510B_M_C = 0;
-        for(int i = 0; i < 5; i++) {
-            mDebugFlagPowerDownCMD510BA[i] = 0;
-            mDebugFlagPowerDownCMD510BB[i] = 0;
-            mDebugFlagPowerDownCMD510BC[i] = 0;
-        }
+		for(int i = 0; i < MOTOR_BDC_NUMBER_MAX;i++) {
+			mCount.motorCMD510BRunSta[i] = 0;
+        	mOSTM16_SysTick20us_CMD510B_M[i] = 0;
+			for(int j = 0; j < 5;j++) {
+            	mDebugFlagPowerDownCMD510B[i][j] = 0;
+			}
+		}
 #endif
 		mMachineSta.motorPowerSta[MOTOR1_LOGIC_CHN] = MOTOR_POWER_UP_STA;
 		mMachineSta.motorPowerSta[MOTOR2_LOGIC_CHN] = MOTOR_POWER_UP_STA;

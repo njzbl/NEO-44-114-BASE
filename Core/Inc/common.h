@@ -47,7 +47,7 @@ extern "C" {
 #define NEO_400350_DLK_FB_NO_HY         5       //广州电力公司版本
 #define NEO_400350_DW_DCFAN             6       //辰鑫 + DC风扇
 
-#define MACHINE_TYPE_CUSTOMER           NEO_400350_DLK_FB_NC_HW
+#define MACHINE_TYPE_CUSTOMER           NEO_400350_DW_BASE
 
 #define MODBUS_REG_HOLDING_START_1      1
 #define MODBUS_REG_HOLDING_START_21     2

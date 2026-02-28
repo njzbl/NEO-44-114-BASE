@@ -26,9 +26,7 @@
 #include "MainControl.h"
 extern uint8_t mBDCSta[2];
 extern uint8_t mMotorPowerEnabled;
-extern __IO uint32_t mCMD510BPowerFlagA;
-extern __IO uint32_t mCMD510BPowerFlagB;
-extern __IO uint32_t mCMD510BPowerFlagC;
+extern __IO uint32_t mCMD510BPowerFlag[MOTOR_BDC_NUMBER_MAX];
 /* USER CODE END 0 */
 
 /*----------------------------------------------------------------------------*/
@@ -328,21 +326,21 @@ void setBDCMotorForward(uint8_t sn)
         HAL_GPIO_WritePin(FRONT1_GPIO_Port, FRONT1_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(BACK1_GPIO_Port, BACK1_Pin, GPIO_PIN_SET);
         HAL_GPIO_WritePin(MOTOR_PWR_CTRL1_GPIO_Port, MOTOR_PWR_CTRL1_Pin, GPIO_PIN_SET);
-        mCMD510BPowerFlagA = 0;
+        mCMD510BPowerFlag[0] = 0;
         break;
     }
     case 1: {
         HAL_GPIO_WritePin(FRONT2_GPIO_Port, FRONT2_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(BACK2_GPIO_Port, BACK2_Pin, GPIO_PIN_SET);
         HAL_GPIO_WritePin(MOTOR_PWR_CTRL2_GPIO_Port, MOTOR_PWR_CTRL2_Pin, GPIO_PIN_SET);
-        mCMD510BPowerFlagB = 0;
+        mCMD510BPowerFlag[1] = 0;
         break;
     }
 #if (MACHINE_THIRD_MOTOR == THIRD_MOTOR_ENABLED)
 
     case 2: {
         HAL_GPIO_WritePin(DC_FAN_CTRL_GPIO_Port, DC_FAN_CTRL_Pin, GPIO_PIN_SET);
-        mCMD510BPowerFlagC = 0;
+        mCMD510BPowerFlag[2] = 0;
         break;
     }
 #endif
@@ -393,7 +391,7 @@ void setBDCMotorStop(uint8_t sn)
         HAL_GPIO_WritePin(MOTOR_PWR_CTRL1_GPIO_Port, MOTOR_PWR_CTRL1_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(FRONT1_GPIO_Port, FRONT1_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(BACK1_GPIO_Port, BACK1_Pin, GPIO_PIN_RESET);
-        mCMD510BPowerFlagA = 1;
+        mCMD510BPowerFlag[0] = 1;
         break;
     }
     case 1: {
@@ -401,13 +399,13 @@ void setBDCMotorStop(uint8_t sn)
         HAL_GPIO_WritePin(MOTOR_PWR_CTRL2_GPIO_Port, MOTOR_PWR_CTRL2_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(FRONT2_GPIO_Port, FRONT2_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(BACK2_GPIO_Port, BACK2_Pin, GPIO_PIN_RESET);
-        mCMD510BPowerFlagB = 1;
+        mCMD510BPowerFlag[1] = 1;
         break;
     }
 #if (MACHINE_THIRD_MOTOR == THIRD_MOTOR_ENABLED)
     case 2: {
         HAL_GPIO_WritePin(DC_FAN_CTRL_GPIO_Port, DC_FAN_CTRL_Pin, GPIO_PIN_RESET);
-        mCMD510BPowerFlagC = 1;
+        mCMD510BPowerFlag[2] = 1;
         break;
     }
 #endif
@@ -438,14 +436,14 @@ void setBDCMotorStop(uint8_t sn)
 //             HAL_GPIO_WritePin(BACK1_GPIO_Port, BACK1_Pin, GPIO_PIN_SET);
 //             HAL_GPIO_WritePin(MOTOR_PWR_CTRL1_GPIO_Port, MOTOR_PWR_CTRL1_Pin, GPIO_PIN_SET);
 //             mBDCSta[0] = 4;
-//             mCMD510BPowerFlagA = 0;
+//             mCMD510BPowerFlag[0] = 0;
 //             // printf("Forward mBDCSta[0] = 3; \r\n");
 //         }
 //         break;
 //     }
 //     case 1:
     
-//         mCMD510BPowerFlagB = 0;
+//         mCMD510BPowerFlag[1] = 0;
 
 //         if(mBDCSta[1] == 0 || mBDCSta[1] == 1 || mBDCSta[1] == 3)  {
 //             HAL_GPIO_WritePin(MOTOR_PWR_CTRL2_GPIO_Port, MOTOR_PWR_CTRL2_Pin, GPIO_PIN_RESET);
@@ -458,7 +456,7 @@ void setBDCMotorStop(uint8_t sn)
 //             HAL_GPIO_WritePin(BACK2_GPIO_Port, BACK2_Pin, GPIO_PIN_SET);
 //             HAL_GPIO_WritePin(MOTOR_PWR_CTRL2_GPIO_Port, MOTOR_PWR_CTRL2_Pin, GPIO_PIN_SET);
 //             mBDCSta[1] = 4;
-//             mCMD510BPowerFlagB = 0;
+//             mCMD510BPowerFlag[1] = 0;
 //         }
 //         break;
 //     default:
@@ -520,7 +518,7 @@ void setBDCMotorStop(uint8_t sn)
 //         HAL_GPIO_WritePin(BACK1_GPIO_Port, BACK1_Pin, GPIO_PIN_RESET);
 //         mBDCSta[0] = 0;
 //         // setBRUSH1(0);				//é¿å…æœ�?�äº�?�ç�?�µæœºåœ¨ç�?�µæºæ�?�­ç�?�µåŽé€šè¿‡DIR ç½®é«˜å†å¾®å¼±ä¾�?�ç�?�µå�?�ºçŽ°FGä¿¡å· 0.6V ~ 0.7V çš„BUG
-//         mCMD510BPowerFlagA = 1;
+//         mCMD510BPowerFlag[0] = 1;
 //         // printf("Stop mBDCSta[0] = 0; \r\n");
 //         break;
 //     case 1:
@@ -528,7 +526,7 @@ void setBDCMotorStop(uint8_t sn)
 //         HAL_GPIO_WritePin(FRONT2_GPIO_Port, FRONT2_Pin, GPIO_PIN_RESET);
 //         HAL_GPIO_WritePin(BACK2_GPIO_Port, BACK2_Pin, GPIO_PIN_RESET);
 //         mBDCSta[1] = 0;
-//         mCMD510BPowerFlagB = 1;
+//         mCMD510BPowerFlag[1] = 1;
 //         // setBRUSH2(0);				//é¿å…æœ�?�äº�?�ç�?�µæœºåœ¨ç�?�µæºæ�?�­ç�?�µåŽé€šè¿‡DIR ç½®é«˜å†å¾®å¼±ä¾�?�ç�?�µå�?�ºçŽ°FGä¿¡å· 0.6V ~ 0.7V çš„BUG   
 //         break;
 //     default:

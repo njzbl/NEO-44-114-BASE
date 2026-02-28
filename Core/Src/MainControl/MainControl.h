@@ -118,9 +118,7 @@ typedef struct COUNT
   uint32_t keyDownQG;               //气感信号的按键去抖，单独计时
   uint32_t keyUpQG;               //气感信号的按键去抖，单独计时
   uint32_t power;              //用于180160DW风扇全速运行时，百叶反转时，FG信号异常，等待电机停止后再启动的软件处理。
-  uint32_t motorCMD510BRunStaA;   //记录CMD510B直流无刷电机的百叶在一个检测周期内合理电流值的总数量
-  uint32_t motorCMD510BRunStaB;   //记录CMD510B直流无刷电机的百叶在一个检测周期内合理电流值的总数量
-  uint32_t motorCMD510BRunStaC;   //记录CMD510B直流无刷电机的百叶在一个检测周期内合理电流值的总数量
+  uint32_t motorCMD510BRunSta[MOTOR_BDC_NUMBER_MAX];   //记录CMD510B直流无刷电机的百叶在一个检测周期内合理电流值的总数量
   uint8_t doorSensor[MOTOR_BDC_NUMBER_MAX];   //  百叶关闭状态信号
 }stCOUNT;
 
@@ -148,12 +146,8 @@ typedef struct DOOR_STA
   //2、百叶未到极限位置时，中途开百叶次数，每次开百叶（不到堵转动的极限位置），会增加10个脉冲。
   //3、每次开百叶中间有一次关未到位，再开到堵转的极限位置会多加50个脉冲，每次关百叶中间有一次开未到位，再关到极限位置也会多减50个脉冲
   int32_t motorCurNum[MOTOR_BDC_NUMBER_MAX];       //记录直流有刷电机运动过程中电流超过阈值的次数，对于没有FG信号的电机可以通过此方式确定电机旋转角度的近似值。
-  int32_t nowDoorPositionCMD510BMA;  //CMD510B for DC brushless motor  A 
-  int32_t nowDoorPositionCMD510BMB;  //CMD510B for DC brushless motor  B 
-  int32_t nowDoorPositionCMD510BMC;  //CMD510B for DC brushless motor  B 
-  int32_t doorPositionFinalA;
-  int32_t doorPositionFinalB;
-  int32_t doorPositionFinalC;
+  int32_t nowDoorPositionCMD510BM[MOTOR_BDC_NUMBER_MAX];  //CMD510B for DC brushless motor  A B C
+  int32_t doorPositionFinal[MOTOR_BDC_NUMBER_MAX];
   uint32_t doorSensorHSta[MOTOR_BDC_NUMBER_MAX];   //  百叶关闭状态信号
   uint32_t doorSensorLSta[MOTOR_BDC_NUMBER_MAX];   //  百叶开启状态信号
 
@@ -213,9 +207,7 @@ extern stMOTOR_BDC mMotorBDC;
 extern __IO uint32_t mOSTM16_SysTick20us_K;
 extern __IO uint32_t mOSTM16_SysTick10ms_K;
 extern __IO uint32_t mOSTM16_SysTick1ms_S;
-extern __IO uint32_t mOSTM16_SysTick20us_CMD510B_M_A;
-extern __IO uint32_t mOSTM16_SysTick20us_CMD510B_M_B;
-extern __IO uint32_t mOSTM16_SysTick20us_CMD510B_M_C;
+extern __IO uint32_t mOSTM16_SysTick20us_CMD510B_M[MOTOR_BDC_NUMBER_MAX];
 extern int mDoorRunNumSta;
 extern stMACHINE_MDBUS_STA mMachineModbusSta;
 extern uint16_t mMotorCurCount;
