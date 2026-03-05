@@ -169,9 +169,7 @@ int main(void)
   MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
   
-#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_FB_NC_HW)
-  fixInitGPIO();
-#endif
+
   AHT20_IIC_GPIO_INIT();
   PrintfVersion();
   InitVar();

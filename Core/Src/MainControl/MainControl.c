@@ -90,6 +90,13 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
   /* NOTE: This function should not be modified, when the callback is needed,
            the HAL_GPIO_EXTI_Falling_Callback could be implemented in the user file
    */
+  
+#if(FAN_MODEL == FAN_MODEL_DC_100W)
+	if(GPIO_Pin == FAN_FG_Pin) {
+		mCount.fanRunSta++;
+	}
+#endif
+
 #if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == TZC36_5840_3650 || MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_YLSZ23_FB)
 	
 	
@@ -100,7 +107,12 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 		mDoorSta.motorCh = MOTOR2_LOGIC_CHN;
 	}
 	else if(GPIO_Pin == FAN_FG_Pin) {
+#if (MACHINE_THIRD_MOTOR == THIRD_MOTOR_ENABLED)
 		mDoorSta.motorCh = MOTOR3_LOGIC_CHN;
+#else
+		return;
+#endif
+
 	}
 
 	if(mCMD510BPowerFlag[mDoorSta.motorCh] == 1) {       //增加了下拉电阻，这条限制语句就可以不用增加了，如果没有下拉电阻，那么在电机掉电后因为内部电容的存在，FG信号会缓慢的从高电平掉落到低电平，就是触发成千上万个FG脉冲信号。增加了下拉电阻可以非常有效的解决这个问题。
@@ -143,12 +155,6 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 
 #endif
 
-#if(FAN_MODEL == FAN_MODEL_DC_100W)
-	if(GPIO_Pin == FAN_FG_Pin) {
-		mCount.fanRunSta++;
-	}
-
-#endif
 }
 
 void InitVar(void)
@@ -573,11 +579,6 @@ int MainControl(void)
 					
 #if (MACHINE_DETECT_FOREIGN == DETECT_FOREIGN_ENABLED)		//卡异物检测代码还未改好，要区分不同电机的实际情况,设定不同阈值
 
-#if (MOTOR_MODEL == DLK_YLSZ23_FB)
-					if(mDoorSta.motorCurNum[i] < FAREST_POSITION_DLK_MOTOR_GB && mKeySta.nowKeySta == OPEN_DOOR) {		//正常情况下百叶跑完整个行程至少有2700个
-						motorAllSta |= 1;
-					}
-#endif
 #endif
 
 				}
@@ -596,13 +597,7 @@ int MainControl(void)
             }
             // printf("mDoorSta.motorCurNum = %d,%d,%d motorCurTemp = %d,%d,%d\r\n",mDoorSta.motorCurNum[0],mDoorSta.motorCurNum[1],mDoorSta.motorCurNum[2],motorCurTemp[0],motorCurTemp[1],motorCurTemp[2]);
 #endif
-#if (MOTOR_MODEL == DLK_YLSZ23_FB)
-			if(mKeySta.nowKeySta == CLOSE_DOOR && (mDoorSta.doorSensorHSta[MOTOR1_LOGIC_CHN] < NEAREST_POSITION_DLK_MOTOR_GB || mDoorSta.doorSensorHSta[MOTOR2_LOGIC_CHN] < NEAREST_POSITION_DLK_MOTOR_GB)) {
-				mOutputSta.motorS1 = MACHINE_ERR;
-			}
-			printf("mDoorSta.motorCurNum = %d,%d,%d motorCurTemp = %d,%d,%d\r\n",mDoorSta.motorCurNum[0],mDoorSta.motorCurNum[1],mDoorSta.motorCurNum[2],motorCurTemp[0],motorCurTemp[1],motorCurTemp[2]);
 
-#endif
 #endif
 
 #endif
@@ -979,7 +974,6 @@ void StartFan(void)
 {
 #if (FAN_MODEL == FAN_MODEL_AC_75W)
 	setACFanCtrl(1);
-	setDCFanCtrl(1);
 #endif
 #if (FAN_MODEL == FAN_MODEL_DC_100W)
 	setDCFanCtrl(1);
@@ -991,7 +985,6 @@ void StopFan(void)
 {
 #if (FAN_MODEL == FAN_MODEL_AC_75W)
 	setACFanCtrl(0);
-	setDCFanCtrl(0);
 #endif
 #if (FAN_MODEL == FAN_MODEL_DC_100W)
 	setDCFanCtrl(0);

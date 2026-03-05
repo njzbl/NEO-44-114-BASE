@@ -84,7 +84,7 @@ extern "C" {
 #define MACHINE_FEEDBACK_MODE               NORMALLY_OPEN          //系统反馈的类型
 #define MODBUS_CTRL                         PARAM_DISABLED   //0: no modbus   1: enabled modbus
 #define STOP_FAN_CUR_CHECK                  0   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
-#define FG_CUR_TYPE                         0   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
+#define FG_CUR_TYPE                         1   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
 #define FAN_MODEL                           FAN_MODEL_DC_100W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
 
