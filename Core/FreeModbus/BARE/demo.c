@@ -91,7 +91,7 @@ static USHORT   usRegInputBuf[REG_INPUT_NREGS]=
 
 #endif
 
-#define REG_HOLDING_NREGS 20    //���ּĴ�������
+#define REG_HOLDING_NREGS 64    //���ּĴ�������
 USHORT   usRegHoldingStart = REG_HOLDING_START;
 USHORT   usRegHoldingBuf[REG_HOLDING_NREGS]=
 {0x0000,
@@ -294,21 +294,29 @@ void InitModbus(void)
     record = GetSystemParamInfo(&mSystemParamInfo);
     mSystemParamInfo.Hardware_Version = HARDWARE_VERSION;
     mSystemParamInfo.Application0_Version = SOFTWARE_VERSION;
-    // if(record == 0) {
+    if(record == 0) {
         mSystemParamInfo.Modbus_Address = MODBUS_ADDRESS_DEFAULT;       //默认是1
-    // }
+    }
 
     usRegInputBuf[MACHINE_WORK_MODE_R_REG] = mMachineModbusSta.machineWorkMode;         //上电时默认处于自检状态，后面初始化结束显示待机状态；
     usRegInputBuf[OUT_WINDOWS_STATUS_R_REG] = mMachineModbusSta.outWindowsSta;     //上电时默认百叶处于关闭状态；
-    usRegInputBuf[IN_WINDOWS_STATUS_R_REG] =  mMachineModbusSta.inWindowsSta;      //上电时默认百叶处于关闭状态；
-    usRegInputBuf[FAN_STATUS_R_REG] = mMachineModbusSta.fanSta;                 //上电时默认风扇处于关闭状态；
-    usRegInputBuf[FAN_CURRENT_R_REG] = mMachineModbusSta.fanCurrent;
+    usRegInputBuf[IN_WINDOWS1_STATUS_R_REG] =  mMachineModbusSta.inWindows1Sta;      //上电时默认百叶处于关闭状态；
+    usRegInputBuf[IN_WINDOWS2_STATUS_R_REG] =  mMachineModbusSta.inWindows2Sta;      //上电时默认百叶处于关闭状态；
+
+    usRegInputBuf[OUT_WINDOWS_CUR_VAL_R_REG] = mMachineModbusSta.outWindowsCurVal;     //上电时默认百叶当前值；
+    usRegInputBuf[IN_WINDOWS1_CUR_VAL_R_REG] =  mMachineModbusSta.inWindows1CurVal;      //上电时默认百叶当前值；
+    usRegInputBuf[IN_WINDOWS2_CUR_VAL_R_REG] =  mMachineModbusSta.inWindows2CurVal;      //上电时默认百叶当前值；
+
+    usRegInputBuf[FAN1_STATUS_R_REG] = mMachineModbusSta.fan1Sta;                 //上电时默认风扇处于关闭状态；
+    usRegInputBuf[FAN1_CURRENT_R_REG] = mMachineModbusSta.fan1Current;
+    usRegInputBuf[FAN2_STATUS_R_REG] = mMachineModbusSta.fan2Sta;                 //上电时默认风扇处于关闭状态；
+    usRegInputBuf[FAN2_CURRENT_R_REG] = mMachineModbusSta.fan2Current;
     usRegInputBuf[COMMUNICATION_STATUS_R_REG] = mMachineModbusSta.communicationSta;         //上电时默认通信处于连接状态；
     usRegInputBuf[SORFWARE_VERSION_R_REG] = mMachineModbusSta.softwareVer;
     usRegInputBuf[FAN_RPM_TOTAL_R_REG] = mMachineModbusSta.fanRPMTotal;                           //上电时默认风扇转速处于0状态；
     usRegInputBuf[FAN1_RPM_R_REG] = mMachineModbusSta.fan1RPM;                                //上电时默认风扇转速处于0状态；
     usRegInputBuf[FAN2_RPM_R_REG] = mMachineModbusSta.fan2RPM;                                //上电时默认风扇转速处于0状态；
-    usRegInputBuf[TEMPERATURE_VAL_R_REG] = mMachineModbusSta.temperature;       //MCU温度
+    usRegInputBuf[TEMPERATURE_VAL_R_REG] = mMachineModbusSta.Ntctemperature;//mMachineModbusSta.temperature;       //MCU温度
     usRegInputBuf[FAN_STATUS2_R_REG] = mMachineModbusSta.FanSta2;                   //上电时默认百叶处于关闭状态；
     usRegInputBuf[NUMBER_CHANGE_ADDRESS_R_REG] = mCountSetModbusAddr; //MODBUS设置的次数；
     usRegInputBuf[NUMBER_FLASH_WRITE_TOTAL_R_REG] = mSystemParamInfo.FlashWriteCount; //MODBUS设置的总次数；
@@ -375,19 +383,21 @@ uint16_t getTestStaModbus(void)
  {
     usRegInputBuf[MACHINE_WORK_MODE_R_REG] = mMachineModbusSta.machineWorkMode; 
     usRegInputBuf[OUT_WINDOWS_STATUS_R_REG] = mMachineModbusSta.outWindowsSta;
-    usRegInputBuf[IN_WINDOWS_STATUS_R_REG] =  mMachineModbusSta.inWindowsSta;
-    usRegInputBuf[FAN_STATUS_R_REG] = mMachineModbusSta.fanSta;
-    usRegInputBuf[FAN_CURRENT_R_REG] = mMachineModbusSta.fanCurrent;
+    usRegInputBuf[IN_WINDOWS1_STATUS_R_REG] =  mMachineModbusSta.inWindows1Sta;
+    usRegInputBuf[IN_WINDOWS2_STATUS_R_REG] =  mMachineModbusSta.inWindows2Sta;    
+    usRegInputBuf[OUT_WINDOWS_CUR_VAL_R_REG] = mMachineModbusSta.outWindowsCurVal;
+    usRegInputBuf[IN_WINDOWS1_CUR_VAL_R_REG] =  mMachineModbusSta.inWindows1CurVal;
+    usRegInputBuf[IN_WINDOWS2_CUR_VAL_R_REG] =  mMachineModbusSta.inWindows2CurVal;
+    usRegInputBuf[FAN1_STATUS_R_REG] = mMachineModbusSta.fan1Sta;
+    usRegInputBuf[FAN1_CURRENT_R_REG] = mMachineModbusSta.fan1Current;
+    usRegInputBuf[FAN2_STATUS_R_REG] = mMachineModbusSta.fan2Sta;
+    usRegInputBuf[FAN2_CURRENT_R_REG] = mMachineModbusSta.fan2Current;
     usRegInputBuf[COMMUNICATION_STATUS_R_REG] = mMachineModbusSta.communicationSta;
     usRegInputBuf[SORFWARE_VERSION_R_REG] = mMachineModbusSta.softwareVer;
     usRegInputBuf[FAN_RPM_TOTAL_R_REG] = mMachineModbusSta.fanRPMTotal;
     usRegInputBuf[FAN1_RPM_R_REG] = mMachineModbusSta.fan1RPM;
     usRegInputBuf[FAN2_RPM_R_REG] = mMachineModbusSta.fan2RPM;
-    usRegInputBuf[TEMPERATURE_VAL_R_REG] = mMachineModbusSta.temperature;
+    usRegInputBuf[TEMPERATURE_VAL_R_REG] = mMachineModbusSta.Ntctemperature;//mMachineModbusSta.temperature;
     usRegInputBuf[FAN_STATUS2_R_REG] = mMachineModbusSta.FanSta2;
     usRegInputBuf[NTC_TEMPERATURE_VAL_R_REG] =  mMachineModbusSta.Ntctemperature;
-
-    for(int i = 0 ;i < 10;i++) {
-        usRegInputBuf[20 + i] =  usRegHoldingBuf[i];
-    }
  }

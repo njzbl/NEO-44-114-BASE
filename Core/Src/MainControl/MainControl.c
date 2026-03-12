@@ -33,11 +33,11 @@ stMACHINE_STA mMachineSta = {0};
 stMOTOR_BDC mMotorBDC = {0};
 __IO stFAN_STA mFanSta = {0};
 int mDoorRunNumSta = 0; 	//0: 初始化状态， 1：开关门至少1次。//考虑复位状态下，检测 homeposition.
-stMACHINE_MDBUS_STA mMachineModbusSta;
+stMACHINE_MDBUS_STA mMachineModbusSta = {0};
 stSystemParamTypeDef mSystemParamInfo;
-uint8_t mManualFlag = FALSE;
+uint8_t mManualFlag = TRUE;
 uint8_t mKeyValQG = KEY_VAL_INVALID, mKeyVal485 = KEY_VAL_INVALID, mKeyValTemp = KEY_VAL_INVALID, mAutoVal485 = KEY_VAL_INVALID, mTestVal485 = KEY_VAL_INVALID;
-
+uint8_t mInputKeyMix = KEY_VAL_INVALID, mActionVal = KEY_VAL_INVALID;
 int32_t motorCurTemp[MOTOR_BDC_NUMBER_MAX]; 
 uint8_t mBDCSta[2] = {0};           //0: 初始状态 1：允许开启状态  2：允许关闭状态
 uint8_t mMotorPowerEnabled = 0;     //刚开机时禁止推杆电机供电，这样可以采用0电流时的电平。
@@ -187,9 +187,9 @@ void InitVar(void)
 
     mMachineModbusSta.machineWorkMode = CHECK_SELF_MODE;            //上电时默认处于自检状态，后面初始化结束显示待机状态；
     mMachineModbusSta.outWindowsSta = WINDOWS_CLOSE_MODE;           //上电时默认百叶处于关闭状态；
-    mMachineModbusSta.inWindowsSta = WINDOWS_CLOSE_MODE;            //上电时默认百叶处于关闭状态；
-    mMachineModbusSta.fanSta = FAN_CLOSE_MODE;                      //上电时默认风扇处于关闭状态；
-    mMachineModbusSta.fanCurrent = 0;                               //上电时默认风扇转速处于0状态；
+    mMachineModbusSta.inWindows1Sta = WINDOWS_CLOSE_MODE;            //上电时默认百叶处于关闭状态；
+    mMachineModbusSta.fan1Sta = FAN_CLOSE_MODE;                      //上电时默认风扇处于关闭状态；
+    mMachineModbusSta.fan1Current = 0;                               //上电时默认风扇转速处于0状态；
     mMachineModbusSta.communicationSta = CONNECT_MODE;              //上电时默认通信处于连接状态；
     mMachineModbusSta.softwareVer = SOFTWARE_VERSION;               //
     mMachineModbusSta.fanRPMTotal = 0;                              //上电时默认风扇转速处于0状态；
@@ -240,26 +240,17 @@ void InitNewKeyVar(uint8_t keySta)
 	}
 	if(keySta == OPEN_DOOR) {
 
-#if (MODBUS_COMMUNICATION_ADDRESS_TYPE == MODBUS_REG_HOLDING_START_21)
         mMachineModbusSta.machineWorkMode = RUNNINT_MODE;
-#endif
-#if (MODBUS_COMMUNICATION_ADDRESS_TYPE == MODBUS_REG_HOLDING_START_1)
-        mMachineModbusSta.machineWorkMode = RUNNINT_MODE - 1;
-#endif
-        mMachineModbusSta.fanSta = FAN_OPEN_MODE;
+        mMachineModbusSta.fan1Sta = FAN_OPEN_MODE;
         mMachineModbusSta.outWindowsSta = WINDOWS_OPEN_MODE;
-        mMachineModbusSta.inWindowsSta = WINDOWS_OPEN_MODE;
+        mMachineModbusSta.inWindows1Sta = WINDOWS_OPEN_MODE;
 	}
 	else if(keySta == CLOSE_DOOR) {
-#if (MODBUS_COMMUNICATION_ADDRESS_TYPE == MODBUS_REG_HOLDING_START_21)
         mMachineModbusSta.machineWorkMode = WAITTING_MODE;
-#endif
-#if (MODBUS_COMMUNICATION_ADDRESS_TYPE == MODBUS_REG_HOLDING_START_1)
-        mMachineModbusSta.machineWorkMode = WAITTING_MODE - 1;
-#endif
-        mMachineModbusSta.fanSta = FAN_CLOSE_MODE;                      //上电时默认风扇处于关闭状态；
+        mMachineModbusSta.fan1Sta = FAN_CLOSE_MODE;                      //上电时默认风扇处于关闭状态；
         mMachineModbusSta.outWindowsSta = WINDOWS_CLOSE_MODE;
-        mMachineModbusSta.inWindowsSta = WINDOWS_CLOSE_MODE;
+        mMachineModbusSta.inWindows1Sta = WINDOWS_CLOSE_MODE;
+		mMachineModbusSta.fan1Current = 0;
 	}
     printf("mPtMotorCurrentMax[0:3] = %d,%d,%d _ %d,%d\r\n",mPtMotorCurrentMax[0],mPtMotorCurrentMax[1],mPtMotorCurrentMax[2],mPtMotorCurrentMax[4],mPtMotorCurrentMax[5]);
 	for(int i = 0;i < MOTOR_BDC_NUMBER_MAX;i++) {
@@ -350,9 +341,15 @@ int MainControl(void)
 
 		return retn;
 	}
+
+	if(mMachineSta.hBridgeSta == H_BRIDGE_STATE_OFF) {	//这条语句必须要在InitNewKeyVar()函数之前，否则会造成H桥上下管同时导通的问题。
+		mDoorSta.msStopDelay++;
+		if(mDoorSta.msStopDelay >= 50)		//500ms
+			mMachineSta.hBridgeSta = H_BRIDGE_STATE_WAIT;
+	}
+
     UpdataModbusAddr();
 	mInputSta.startQG = getChkSta();
-		// printf("mOSTM16_SysTick20us_K = %d mInputSta.startQG = %d\r\n",mOSTM16_SysTick20us_K,mInputSta.startQG);
 #if (LOOP_TEST == 1)
 	if(mCount.loopTestCount <= 650) {	//if(mCount.loopTestCount <= 3000) {
 		mInputSta.startQG = GPIO_PIN_SET;
@@ -365,7 +362,7 @@ int MainControl(void)
 	else
 		mCount.loopTestCount = 0;
 #endif
-	if(mDoorRunNumSta < 2) {
+	if(mDoorRunNumSta < 3) {
 		if(mCount.initBackDoor < DELAY_1S)	{	//前1秒开门，后6秒关门，为了避开关门初期接近开关不可靠接触，采用惯性关门。
 			mInputSta.startQG = GPIO_PIN_RESET;
 		}
@@ -373,27 +370,15 @@ int MainControl(void)
 			mInputSta.startQG = GPIO_PIN_SET;
 		}
 	}
-	// printf("mOSTM16_SysTick20us_K:%d;%d\r\n",mOSTM16_SysTick20us_K,mInputSta.startQG);
-	
-	// if (mDoorRunNumSta < 2) {
-	// 	delayKey = DELAY_150MS;
-	// }
-	// else {
-	// 	delayKey = DELAY_1S;		//只有用机械式继电器才会要求间隔1秒钟。
-	// }
-	delayKey = DELAY_150MS;
-	if(mMachineSta.hBridgeSta == H_BRIDGE_STATE_OFF) {	//这条语句必须要在InitNewKeyVar()函数之前，否则会造成H桥上下管同时导通的问题。
-		mDoorSta.msStopDelay++;
-		if(mDoorSta.msStopDelay >= 50)		//500ms
-			mMachineSta.hBridgeSta = H_BRIDGE_STATE_WAIT;
-	}
+
 //>>>>>>>>>>>>>>>>  气感信号按键单独去抖计算，为了实现阳光电源变态的控制逻辑 >>>>>>>>>>>>>>>>>>>>
-    if(mInputSta.startQG == GPIO_PIN_RESET) {   //闭合状态，为了开百叶
+	delayKey = DELAY_150MS;
+    if(mInputSta.startQG == GPIO_PIN_RESET) {   //闭合状态，为了开百叶 ，
         mCount.keyUpQG = 0;
         mCount.keyDownQG++;
         if(mCount.keyDownQG > delayKey) {	 //600ms去抖
             mCount.keyDownQG = delayKey + 1;
-            mKeyValQG = KEY_VAL_OPEN_WIN;
+            mActionVal = KEY_VAL_OPEN_WIN;
         }
     }
     else {   //断开状态，为了关百叶
@@ -401,52 +386,54 @@ int MainControl(void)
         mCount.keyUpQG++;
         if(mCount.keyUpQG > delayKey) {	 //600ms去抖
             mCount.keyUpQG = delayKey + 1;
-            mKeyValQG = KEY_VAL_CLOSE_WIN;
+            mActionVal = KEY_VAL_CLOSE_WIN;
         }
     }
+	// printf("mInputSta.startQG = %d\r\n",mInputSta.startQG);
 //<<<<<<<<<<<<<<<<  气感信号按键单独去抖计算，为了实现阳光电源变态的控制逻辑 <<<<<<<<<<<<<<<<<<<<
 
+
 #if (MODBUS_CTRL == PARAM_ENABLED)
-    // if(mManualFlag == FALSE) {     //气感信号优先级高于485信号。只有在气感信号手动按钮状态为关闭百叶时，485信号才有效。
-    //     if(getCtrlStaModbus() == ON_MODE_PARAMS)
-    //         mKeyVal485 = KEY_VAL_OPEN_WIN;
-    //     else if(getCtrlStaModbus() == OFF_MODE_PARAMS)
-    //         mKeyVal485 = KEY_VAL_CLOSE_WIN;
-    //     else
-    //         mKeyVal485 = KEY_VAL_INVALID;
-    // }
-    // else {
-    //     mKeyVal485 = mKeyValQG;
-    // }
-    if(getCtrlStaModbus() == ON_MODE_PARAMS)
-        mKeyVal485 = KEY_VAL_OPEN_WIN;
-    else if(getCtrlStaModbus() == OFF_MODE_PARAMS)
-        mKeyVal485 = KEY_VAL_CLOSE_WIN;
-    else
-        mKeyVal485 = KEY_VAL_INVALID;
+	if((mManualFlag == FALSE) && (mInputSta.startQG == GPIO_PIN_SET)) {     //气感信号优先级高于485信号。只有在气感信号手动按钮状态为关闭百叶时，485信号才有效。
+		if(getCtrlStaModbus() == ON_MODE_PARAMS)
+			mInputSta.start485 = KEY_VAL_OPEN_WIN;
+		else if(getCtrlStaModbus() == OFF_MODE_PARAMS)
+			mInputSta.start485 = KEY_VAL_CLOSE_WIN;
+		else
+			mInputSta.start485 = mInputSta.startQG;
+	}
+    else {
+        mInputSta.start485 = mInputSta.startQG;
+    }
 #endif
 
 #if (MODBUS_CTRL == PARAM_DISABLED)
-    mManualFlag == TRUE;
+    mManualFlag = TRUE;
+	mInputSta.start485 = mInputSta.startQG;
 #endif
+
+	mActionVal = mInputSta.start485;  //这条一定是建立在 关闭百叶已经完成整个动作，才将 mManualFlag = FALSE；
+
+
+
 
 #if (MACHINE_POWER_LOSS_DETECT == PROTECTION_ENABLED)
     if(mPowerAdcB.CurrentVal < mPowerAdcB.ThresholdMin && mCount.initBackDoor > DELAY_7S) {      //上电7秒以后  ,断电自动关闭百叶。
-        mKeyValQG = KEY_VAL_CLOSE_WIN;
+        mActionVal = KEY_VAL_CLOSE_WIN;
     }
 #endif
-	if(mKeyValQG == KEY_VAL_OPEN_WIN) {//if(mInputSta.start == KEY_VAL_OPEN_WIN) {
-        // if(mKeyValQG == KEY_VAL_OPEN_WIN)       //手工启动模式。
-        //     mManualFlag = TRUE;
+	if(mActionVal == KEY_VAL_OPEN_WIN) {//if(mInputSta.start == KEY_VAL_OPEN_WIN) {
+        if(mInputSta.startQG == KEY_VAL_OPEN_WIN)       //手工启动模式。
+            mManualFlag = TRUE;
         if(mKeySta.nowKeySta != OPEN_DOOR) {
             InitNewKeyVar(OPEN_DOOR);
-            printf("mKeySta.isNewKeyCmd = TRUE  OPEN_DOOR  %d,%d \r\n",mKeyValQG, mKeyVal485);
+            printf("mKeySta.isNewKeyCmd = TRUE  OPEN_DOOR  %d,%d \r\n",mKeyValQG, mInputKeyMix);
         }
     }
-	else if(mKeyValQG == KEY_VAL_CLOSE_WIN) {
+	else if(mActionVal == KEY_VAL_CLOSE_WIN) {
         if(mKeySta.nowKeySta != CLOSE_DOOR) {
             InitNewKeyVar(CLOSE_DOOR);
-            printf("mKeySta.isNewKeyCmd = TRUE  CLOSE_DOOR  %d,%d \r\n",mKeyValQG, mKeyVal485);
+            printf("mKeySta.isNewKeyCmd = TRUE  CLOSE_DOOR  %d,%d \r\n",mKeyValQG, mInputKeyMix);
         }
     }
 
@@ -717,8 +704,9 @@ int MainControl(void)
 			}
         }
 #endif
+		
+        mFanSta.fanFg = mCount.fanRunSta >> 2;
 		mCount.fanRunSta = 0;
-        mFanSta.fanFg = 0;
 		mCount.fan = DELAY_5S; //当第一个6秒来到后，每1秒检测一次风机状态。
 
 
@@ -734,11 +722,11 @@ int MainControl(void)
 		}
 		if(mKeySta.nowKeySta == OPEN_DOOR) {
 			// printf("setSysSta(1); %d_%d  FAN_%d,%d,%d\r\n",mOutputSta.motorS1,mOutputSta.fanS2,mFanAdc.CurrentVal,mFanAdc.ThresholdMin,mFanAdc.ThresholdMax);
-			printf("setSysSta(1);fan current:%d mA %d\r\n",mMachineModbusSta.fanCurrent,mFanAdc.CurrentVal);
+			printf("setSysSta(1);fan current:%d mA %d\r\n",mMachineModbusSta.fan1Current,mFanAdc.CurrentVal);
 			setSysSta(1);
 		}
 		else {
-			printf("setSysSta(0);fan current:%d mA %d\r\n",mMachineModbusSta.fanCurrent,mFanAdc.CurrentVal);
+			printf("setSysSta(0);fan current:%d mA %d\r\n",mMachineModbusSta.fan1Current,mFanAdc.CurrentVal);
 			setSysSta(0);
 		}
 #endif
@@ -836,32 +824,38 @@ int MainControl(void)
                 mMachineModbusSta.outWindowsSta = WINDOWS_CLOSE_MODE;
         }
         if(fg_cur[MOTOR_IN_1_CHN] < 100) {  //进风
-            mMachineModbusSta.inWindowsSta = WINDOWS_FAILURE_MODE;
+            mMachineModbusSta.inWindows1Sta = WINDOWS_FAILURE_MODE;
 		}
         else {            
             if(mKeySta.nowKeySta == OPEN_DOOR)
-                mMachineModbusSta.inWindowsSta = WINDOWS_OPEN_MODE;
+                mMachineModbusSta.inWindows1Sta = WINDOWS_OPEN_MODE;
             else
-                mMachineModbusSta.inWindowsSta = WINDOWS_CLOSE_MODE;
+                mMachineModbusSta.inWindows1Sta = WINDOWS_CLOSE_MODE;
         }
         //风机状态
         if(mOutputSta.fanS2 == MACHINE_ERR) {
-            mMachineModbusSta.fanSta = FAN_FAILURE_MODE;
+            mMachineModbusSta.fan1Sta = FAN_FAILURE_MODE;
         }
         else {
              if(mKeySta.nowKeySta == OPEN_DOOR) {
-                mMachineModbusSta.fanSta = FAN_OPEN_MODE;
+                mMachineModbusSta.fan1Sta = FAN_OPEN_MODE;
                 mMachineModbusSta.fanRPMTotal = 2750;
                 mMachineModbusSta.fan1RPM = 2750;
                 mMachineModbusSta.fan2RPM = 2750;
             }
             else {
-                mMachineModbusSta.fanSta = FAN_CLOSE_MODE;
+                mMachineModbusSta.fan1Sta = FAN_CLOSE_MODE;
                 mMachineModbusSta.fanRPMTotal = 0;
                 mMachineModbusSta.fan1RPM = 0;
                 mMachineModbusSta.fan2RPM = 0;
             }
         }
+	#if(FAN_MODEL == FAN_MODEL_DC_100W)
+		if(mFanSta.fanFg > 8000) {	//第一次进入时是刚启动的前5秒累计值。
+			mFanSta.fanFg = 3000;
+		}
+		mMachineModbusSta.fan1Current = mFanSta.fanFg;  //风扇装束或者电流，这里先实现的是转速。
+	#endif
 //<<<<<<<<485 反馈状态<<<<<<<<<<<<<<
 
     // stATH20DATA ath20data;
@@ -871,6 +865,15 @@ int MainControl(void)
 
         if(mKeySta.nowKeySta == CLOSE_DOOR)     //这样写是简化判断逻辑。总之，只有在手动气感信号关闭百叶的时候，485信号才有效。
             mManualFlag = FALSE;
+	}
+	else if(mCount.fan < DELAY_5S) {		
+		if((mCount.fan / DELAY_1S) == 0) {
+			mFanSta.fanFg = (mCount.fanRunSta >> 2);
+		}
+		else {
+			mFanSta.fanFg = (mCount.fanRunSta >> 2) / (mCount.fan / DELAY_1S);
+		}
+		mMachineModbusSta.fan1Current = mFanSta.fanFg;
 	}
 	return retn;
 }

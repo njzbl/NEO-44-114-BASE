@@ -86,8 +86,8 @@
 
 #define MAINCONTROL_20US_TO_10MS                500
 
-#define KEY_VAL_OPEN_WIN                            0
-#define KEY_VAL_CLOSE_WIN                           1
+#define KEY_VAL_OPEN_WIN                            GPIO_PIN_RESET
+#define KEY_VAL_CLOSE_WIN                           GPIO_PIN_SET
 #define KEY_VAL_INVALID                             0xff
 /*****************************************************************************************************************************
  * Enumeration Definition

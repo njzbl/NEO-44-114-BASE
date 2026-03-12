@@ -46,8 +46,9 @@ extern "C" {
 #define NEO_400350_DLK_FB_NC_HW         4       //常闭反馈， 华为版本,阳光电源版本
 #define NEO_400350_DLK_FB_NO_HY         5       //广州电力公司版本
 #define NEO_400350_DW_DCFAN             6       //辰鑫 + DC风扇
+#define NEO_400350_DLK_TG_DCFAN_MB      7       //迪洛克推杆 + sinwan_DC风扇 + modbus
 
-#define MACHINE_TYPE_CUSTOMER           NEO_400350_DW_BASE
+#define MACHINE_TYPE_CUSTOMER           NEO_400350_DLK_TG_DCFAN
 
 #define MODBUS_REG_HOLDING_START_1      1
 #define MODBUS_REG_HOLDING_START_21     2
@@ -138,6 +139,17 @@ extern "C" {
 
 #endif
 
+#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_DCFAN)
+#define MOTOR_MODEL                         DLK_TG_60W
+#define MODBUS_COMMUNICATION_ADDRESS_TYPE   MODBUS_REG_HOLDING_START_1
+#define MACHINE_FEEDBACK_MODE               NORMALLY_OPEN          //系统反馈的类型
+#define MODBUS_CTRL                         PARAM_ENABLED   //0: no modbus   1: enabled modbus
+#define STOP_FAN_CUR_CHECK                  0   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
+#define FG_CUR_TYPE                         1   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
+#define FAN_MODEL                           FAN_MODEL_DC_100W
+#define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+
+#endif
 
 
 
@@ -170,7 +182,7 @@ extern "C" {
 
 #define MACHINE_STRUCTURE               0   //0: no protect   1: enabled protect
 
-#define SOFTWARE_VERSION                105
+#define SOFTWARE_VERSION                106
 #define HARDWARE_VERSION                102
 #define MODBUS_ADDRESS_DEFAULT          1
 
@@ -334,9 +346,10 @@ extern "C" {
 #define MOTOR2_LOGIC_CHN                1
 #define MOTOR3_LOGIC_CHN                2
 #define MOTOR4_LOGIC_CHN                3
-
-#define MOTOR_IN_1_CHN                  MOTOR2_LOGIC_CHN        //进风百叶1
-#define MOTOR_OUT_CHN                   MOTOR3_LOGIC_CHN        //排风百叶
+      //进风百叶1
+#define MOTOR_OUT_CHN                   MOTOR2_LOGIC_CHN
+#define MOTOR_IN_1_CHN                  MOTOR1_LOGIC_CHN
+#define MOTOR_IN_2_CHN                  MOTOR3_LOGIC_CHN           //排风百叶
 
 
 #define H_BRIDGE_STATE_INIT             0

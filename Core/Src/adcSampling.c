@@ -230,11 +230,13 @@ void adcSampling(void)
             adcSum += mFanAdcAvg[i];
         }
         nowVal = adcSum / 10;
+	#if(FAN_MODEL == FAN_MODEL_AC_75W)
         if(nowVal > 40)
-            mMachineModbusSta.fanCurrent = nowVal - 20;  //有20mA 的基准偏差
+            mMachineModbusSta.fan1Current = nowVal - 20;  //有20mA 的基准偏差
         else
-            mMachineModbusSta.fanCurrent = 0;
+            mMachineModbusSta.fan1Current = 0;
         //  printf("fan current:%d mA %d\r\n",nowVal,mFanAdc.CurrentVal);
+	#endif
         mFanAdc.CurFlag = 1;                //CurFlag：采集数据有效值标识
     }
 //     if(mTemplateAdc.SamplingFalg == 1) {
@@ -474,6 +476,14 @@ void adcSampling(void)
         }
         // printf("---------mMotorAdc.CurrentVal = %d,%d,%d %d--------------\r\n", mMotorAdc[0].CurrentVal, mMotorAdc[1].CurrentVal, mMotorAdc[2].CurrentVal,mNtc10KAdc.CurrentVal);
         // printf("---------mMotorAdc.CurrentVal = %d,%d,%d --------------\r\n", adcPower[0] / ADC_DIVISION_VAL, adcPower[1] / ADC_DIVISION_VAL, adcPower[2] / ADC_DIVISION_VAL);
+        if(mMotorAdc[1].CurrentVal > 10)
+            mMachineModbusSta.outWindowsCurVal = mMotorAdc[1].CurrentVal;
+        else
+            mMachineModbusSta.outWindowsCurVal = 0;
+        if(mMotorAdc[0].CurrentVal > 10)
+            mMachineModbusSta.inWindows1CurVal = mMotorAdc[0].CurrentVal;
+        else
+            mMachineModbusSta.inWindows1CurVal = 0;
         mMotorAdc[0].DivNum = 0; //新的一轮采集开始
         mMotorAdc[0].SamplingFalg = 0;   //清除采集完成标识
         mMotorAdc[0].CurFlag = 1;
@@ -511,7 +521,7 @@ void adcSampling(void)
             }
         }
         mNtc10KAdc.CurrentVal = i - 55;
-        mMachineModbusSta.Ntctemperature = mNtc10KAdc.CurrentVal + 273;
+        mMachineModbusSta.Ntctemperature = mNtc10KAdc.CurrentVal;
         mNtc10KAdc.DivNum = 0; //新的一轮采集开始
         // mNtc10KAdc.SamplingFalg = 0;   //清除采集完成标识
         mNtc10KAdc.CurFlag = 1;
