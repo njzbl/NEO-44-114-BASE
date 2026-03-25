@@ -438,13 +438,21 @@ int MainControl(void)
     }
 
 	//>>>>>>>>>>>>>>>>>>>>>>>>>>>>风机控制>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#if (MOTOR_MODEL == CHENXIN_5840_3650)
+	if(mKeySta.nextKeySta == OPEN_DOOR && mDoorRunNumSta >= 3) {	//闭合气感信号，要求开窗、开风机
+#else
 	if(mKeySta.nextKeySta == OPEN_DOOR) {	//闭合气感信号，要求开窗、开风机
+#endif
 		// if(mCount.initBackDoor > 400)		//继电器控制百叶，上电的时候不能频繁开关继电器，小于1S 间隔会导致继电器不能有效释放。
 			StartFan();
 		OpenExShades();
 		// mKeySta.nextKeySta = UNCERTAIN;
 	}
+#if (MOTOR_MODEL == CHENXIN_5840_3650)
+	else if(mKeySta.nextKeySta == CLOSE_DOOR && mDoorRunNumSta >= 3){
+#else
 	else if(mKeySta.nextKeySta == CLOSE_DOOR){
+#endif
 		StopFan();
 		CloseExShades();
 		// mKeySta.nextKeySta = UNCERTAIN;	//华为版本通过mMachineSta.hBridgeSta变量控制只开一次。其实多次发出开命令也可以的。
@@ -685,7 +693,6 @@ int MainControl(void)
 			else {
 				mOutputSta.fanS2 = MACHINE_ERR;
 			}
-
 		}
 // #if(MOTOR_MODEL == DLK_TG_60W)          //25°C 电机推出时完全堵转，mMotorAdc[j].CurrentVal 瞬间最大值3275，然后逐渐降低最后一直稳定在2800左右，此时稳压电源读数为：2.6 ~ 2.8A ，在低温-30°C时小裴测试稳压电源读数2.9A
 //             	printf("mOutputSta.fanS2 = %d; mCount.fanRunSta = %d mDoorSta.motorCurNum[0,1]=%d,%d mMotorAdc[0:2].CurrentVal = %d_%d_%d\r\n",mOutputSta.fanS2,mCount.fanRunSta,mDoorSta.motorCurNum[0],mDoorSta.motorCurNum[1],mMotorAdc[0].CurrentVal,mMotorAdc[1].CurrentVal,mMotorAdc[2].CurrentVal);
@@ -705,6 +712,9 @@ int MainControl(void)
         }
 #endif
 		
+		if(mDoorRunNumSta < 3) {
+			mOutputSta.fanS2 = MACHINE_OK;
+		}
         mFanSta.fanFg = mCount.fanRunSta >> 2;
 		mCount.fanRunSta = 0;
 		mCount.fan = DELAY_5S; //当第一个6秒来到后，每1秒检测一次风机状态。

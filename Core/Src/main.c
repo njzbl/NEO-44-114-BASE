@@ -118,7 +118,7 @@ void PrintfVersion(void)
 #if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_FB_NO_HY)
     printf("Software Version: NEO_400350_DLK_FB_NO_HY-V103-20250526-OM\r\n");
 #endif
-#if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_DCFAN)
+#if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_DCFAN_MB)
     printf("Software Version: NEO_400350_DLK_TG_DCFAN_NO-V103-20260312\r\n");
 #endif
 }

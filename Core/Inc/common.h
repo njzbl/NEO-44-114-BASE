@@ -48,7 +48,7 @@ extern "C" {
 #define NEO_400350_DW_DCFAN             6       //辰鑫 + DC风扇
 #define NEO_400350_DLK_TG_DCFAN_MB      7       //迪洛克推杆 + sinwan_DC风扇 + modbus
 
-#define MACHINE_TYPE_CUSTOMER           NEO_400350_DLK_TG_DCFAN
+#define MACHINE_TYPE_CUSTOMER           NEO_400350_DLK_TG_DCFAN_MB
 
 #define MODBUS_REG_HOLDING_START_1      1
 #define MODBUS_REG_HOLDING_START_21     2
@@ -139,7 +139,7 @@ extern "C" {
 
 #endif
 
-#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_DCFAN)
+#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_DCFAN_MB)
 #define MOTOR_MODEL                         DLK_TG_60W
 #define MODBUS_COMMUNICATION_ADDRESS_TYPE   MODBUS_REG_HOLDING_START_1
 #define MACHINE_FEEDBACK_MODE               NORMALLY_OPEN          //系统反馈的类型
