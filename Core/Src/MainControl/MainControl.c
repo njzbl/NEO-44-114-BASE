@@ -443,8 +443,6 @@ int MainControl(void)
 #else
 	if(mKeySta.nextKeySta == OPEN_DOOR) {	//闭合气感信号，要求开窗、开风机
 #endif
-		// if(mCount.initBackDoor > 400)		//继电器控制百叶，上电的时候不能频繁开关继电器，小于1S 间隔会导致继电器不能有效释放。
-			StartFan();
 		OpenExShades();
 		// mKeySta.nextKeySta = UNCERTAIN;
 	}
@@ -453,13 +451,29 @@ int MainControl(void)
 #else
 	else if(mKeySta.nextKeySta == CLOSE_DOOR){
 #endif
-		StopFan();
 		CloseExShades();
 		// mKeySta.nextKeySta = UNCERTAIN;	//华为版本通过mMachineSta.hBridgeSta变量控制只开一次。其实多次发出开命令也可以的。
 	}
 	if(mMachineSta.hBridgeSta == H_BRIDGE_STATE_OPEN_H) {	//华为版本通过mMachineSta.hBridgeSta变量控制
 			mKeySta.nextKeySta = UNCERTAIN;
 	}
+	//>>>>>>>>>控制风扇>>>>>>>>>>>>>>>>>>>>
+	if(mKeySta.nowKeySta == OPEN_DOOR) {
+#if(FAN_MODEL == FAN_MODEL_DC_100W)
+		if (mCount.fan >= DELAY_2S) {	//直流风扇功率较大，为了和电机分时启动降低供电电源最大功率的需求			
+			StartFan();
+		}
+		else {
+			mCount.fanRunSta = FAN_EFFICACY_NUM_MAX - 15; //直流风扇延时启动，有可能在随后的4秒内转速不够而造成误判。同时可以避免风扇未接时的无法检出。
+		}	
+#else
+		StartFan();
+#endif
+	}	
+	else if(mKeySta.nowKeySta == CLOSE_DOOR) {
+		StopFan();
+	}
+	//<<<<<<<<<<控制风扇<<<<<<<<<<<<<<<<<<<<<<<
 
 #if (FAN_MODEL == FAN_MODEL_AC_75W)
 	if(mCount.fan >= DELAY_4S) {	//风机开启或者关闭信号发出后延时4秒钟，检测电流
