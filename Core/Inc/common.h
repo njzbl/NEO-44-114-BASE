@@ -47,8 +47,9 @@ extern "C" {
 #define NEO_400350_DLK_FB_NO_HY         5       //广州电力公司版本
 #define NEO_400350_DW_DCFAN             6       //辰鑫 + DC风扇
 #define NEO_400350_DLK_TG_DCFAN_MB      7       //迪洛克推杆 + sinwan_DC风扇 + modbus
+#define NEO_400350_DLK_TG_DCFAN_NC      8       //迪洛克推杆 + DC风扇 + NC
 
-#define MACHINE_TYPE_CUSTOMER           NEO_400350_DLK_TG_DCFAN_MB
+#define MACHINE_TYPE_CUSTOMER           NEO_400350_DW_BASE
 
 #define MODBUS_REG_HOLDING_START_1      1
 #define MODBUS_REG_HOLDING_START_21     2
@@ -144,6 +145,18 @@ extern "C" {
 #define MODBUS_COMMUNICATION_ADDRESS_TYPE   MODBUS_REG_HOLDING_START_1
 #define MACHINE_FEEDBACK_MODE               NORMALLY_OPEN          //系统反馈的类型
 #define MODBUS_CTRL                         PARAM_ENABLED   //0: no modbus   1: enabled modbus
+#define STOP_FAN_CUR_CHECK                  0   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
+#define FG_CUR_TYPE                         1   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
+#define FAN_MODEL                           FAN_MODEL_DC_100W
+#define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+
+#endif
+
+#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_DCFAN_NC)
+#define MOTOR_MODEL                         DLK_TG_60W
+#define MODBUS_COMMUNICATION_ADDRESS_TYPE   MODBUS_REG_HOLDING_START_1
+#define MACHINE_FEEDBACK_MODE               NORMALLY_CLOSE          //系统反馈的类型
+#define MODBUS_CTRL                         PARAM_DISABLED   //0: no modbus   1: enabled modbus
 #define STOP_FAN_CUR_CHECK                  0   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
 #define FG_CUR_TYPE                         1   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
 #define FAN_MODEL                           FAN_MODEL_DC_100W

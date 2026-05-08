@@ -121,6 +121,9 @@ void PrintfVersion(void)
 #if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_DCFAN_MB)
     printf("Software Version: NEO_400350_DLK_TG_DCFAN_NO-V103-20260312\r\n");
 #endif
+#if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_DCFAN_NC)
+    printf("Software Version: NEO_400350_DLK_TG_DCFAN_NC-V103-20260312\r\n");
+#endif
 }
 
 __IO   uint16_t   aADCxConvertedData[ADC_CONVERTED_DATA_BUFFER_SIZE];

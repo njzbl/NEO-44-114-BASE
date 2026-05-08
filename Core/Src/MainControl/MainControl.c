@@ -747,11 +747,11 @@ int MainControl(void)
 		if(mKeySta.nowKeySta == OPEN_DOOR) {
 			// printf("setSysSta(1); %d_%d  FAN_%d,%d,%d\r\n",mOutputSta.motorS1,mOutputSta.fanS2,mFanAdc.CurrentVal,mFanAdc.ThresholdMin,mFanAdc.ThresholdMax);
 			printf("setSysSta(1);fan current:%d mA %d\r\n",mMachineModbusSta.fan1Current,mFanAdc.CurrentVal);
-			setSysSta(1);
+			setSysSta(OUT_STATUS_OPEN);
 		}
 		else {
 			printf("setSysSta(0);fan current:%d mA %d\r\n",mMachineModbusSta.fan1Current,mFanAdc.CurrentVal);
-			setSysSta(0);
+			setSysSta(OUT_STATUS_CLOSE);
 		}
 #endif
 

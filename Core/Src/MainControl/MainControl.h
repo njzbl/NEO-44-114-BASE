@@ -55,6 +55,7 @@
 #define DELAY_300MS                     30
 #define DELAY_600MS                     60
 #define DELAY_1S                        100
+#define DELAY_2S                        200
 #define DELAY_3S                        300
 #define DELAY_4S                        400
 #define DELAY_5S                        500
