@@ -22,6 +22,15 @@ extern "C" {
 #define DEBUG_DISABLED                      0
 #define MACHINE_DEBUG                       DEBUG_DISABLED                           //控制调试语句
 
+
+#define DEGREE_MODE                         0
+#define CURRENT_MODE                        1
+#define DOOR_CUR_VAL_MODE                   CURRENT_MODE
+
+#define VALID                               1
+#define INVALID                             0
+#define MACHINE_ERR                         1
+#define MACHINE_OK                          0
 //风机功率设定，只能选择一种风机
 #define FAN_MODEL_AC_75W                  1
 #define FAN_MODEL_DC_100W                 2
@@ -40,7 +49,7 @@ extern "C" {
 #define G_ROCH_D3Ex                     6       //基洛克防爆推杆电机 ，内部有堵转电流保护
 
 #define NEO_400350_DW_BASE              0
-#define NEO_320270_MAX_BASE             1
+#define NEO_320270_MAX_BASE             1       //迪洛克推杆 + DC风扇 + NO
 #define NEO_400350_DLK_TG_60W_BASE      2
 #define NEO_400350_DLK_FB_NO_BASE       3       //常开反馈
 #define NEO_400350_DLK_FB_NC_HW         4       //常闭反馈， 华为版本,阳光电源版本
@@ -48,11 +57,13 @@ extern "C" {
 #define NEO_400350_DW_DCFAN             6       //辰鑫 + DC风扇
 #define NEO_400350_DLK_TG_DCFAN_MB      7       //迪洛克推杆 + sinwan_DC风扇 + modbus
 #define NEO_400350_DLK_TG_DCFAN_NC      8       //迪洛克推杆 + DC风扇 + NC
+#define NEO_400350_DLK_FB_MB_TSL        9       //迪洛克防爆推杆 + DC风扇 + modbus， 特斯拉版本
+#define NEO_320270_MAX_BASE_OM         10       //迪洛克推杆 + DC风扇 + NO + 单排风
 
-#define MACHINE_TYPE_CUSTOMER           NEO_400350_DW_BASE
+#define MACHINE_TYPE_CUSTOMER           NEO_320270_MAX_BASE
 
 #define MODBUS_REG_HOLDING_START_1      1
-#define MODBUS_REG_HOLDING_START_21     2
+#define MODBUS_REG_HOLDING_START_21     21
 
 
 
@@ -65,6 +76,7 @@ extern "C" {
 #define FG_CUR_TYPE                         0   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
 #define FAN_MODEL                           FAN_MODEL_AC_75W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+#define INLET_MOTOR_FLAG                    VALID
 
 #endif
 
@@ -77,6 +89,7 @@ extern "C" {
 #define FG_CUR_TYPE                         0   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
 #define FAN_MODEL                           FAN_MODEL_DC_100W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+#define INLET_MOTOR_FLAG                    VALID
 
 #endif
 
@@ -89,6 +102,7 @@ extern "C" {
 #define FG_CUR_TYPE                         1   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
 #define FAN_MODEL                           FAN_MODEL_DC_100W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+#define INLET_MOTOR_FLAG                    VALID
 
 #endif
 
@@ -101,6 +115,7 @@ extern "C" {
 #define FG_CUR_TYPE                         1   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
 #define FAN_MODEL                           FAN_MODEL_AC_75W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+#define INLET_MOTOR_FLAG                    VALID
 
 #endif
 
@@ -113,6 +128,7 @@ extern "C" {
 #define FG_CUR_TYPE                         1   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
 #define FAN_MODEL                           FAN_MODEL_AC_75W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+#define INLET_MOTOR_FLAG                    VALID
 
 #endif
 
@@ -125,6 +141,7 @@ extern "C" {
 #define FG_CUR_TYPE                         0   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
 #define FAN_MODEL                           FAN_MODEL_AC_75W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //卡异物检测功能
+#define INLET_MOTOR_FLAG                    VALID
 
 #endif
 
@@ -137,6 +154,7 @@ extern "C" {
 #define FG_CUR_TYPE                         1   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
 #define FAN_MODEL                           FAN_MODEL_AC_75W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+#define INLET_MOTOR_FLAG                    VALID
 
 #endif
 
@@ -149,6 +167,7 @@ extern "C" {
 #define FG_CUR_TYPE                         1   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
 #define FAN_MODEL                           FAN_MODEL_DC_100W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+#define INLET_MOTOR_FLAG                    VALID
 
 #endif
 
@@ -161,6 +180,33 @@ extern "C" {
 #define FG_CUR_TYPE                         1   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
 #define FAN_MODEL                           FAN_MODEL_DC_100W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+#define INLET_MOTOR_FLAG                    VALID
+
+#endif
+
+#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_FB_MB_TSL)
+#define MOTOR_MODEL                         DLK_YLSZ23_FB
+#define MODBUS_COMMUNICATION_ADDRESS_TYPE   MODBUS_REG_HOLDING_START_1
+#define MACHINE_FEEDBACK_MODE               NORMALLY_CLOSE          //系统反馈的类型
+#define MODBUS_CTRL                         PARAM_ENABLED   //0: no modbus   1: enabled modbus
+#define STOP_FAN_CUR_CHECK                  0   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
+#define FG_CUR_TYPE                         0   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
+#define FAN_MODEL                           FAN_MODEL_DC_100W
+#define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //卡异物检测功能
+#define INLET_MOTOR_FLAG                    VALID
+
+#endif
+
+#if (MACHINE_TYPE_CUSTOMER == NEO_320270_MAX_BASE_OM)
+#define MOTOR_MODEL                         DLK_TG_60W
+#define MODBUS_COMMUNICATION_ADDRESS_TYPE   MODBUS_REG_HOLDING_START_21
+#define MACHINE_FEEDBACK_MODE               NORMALLY_OPEN          //系统反馈的类型
+#define MODBUS_CTRL                         PARAM_DISABLED   //0: no modbus   1: enabled modbus
+#define STOP_FAN_CUR_CHECK                  0   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
+#define FG_CUR_TYPE                         1   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
+#define FAN_MODEL                           FAN_MODEL_DC_100W
+#define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+#define INLET_MOTOR_FLAG                    INVALID
 
 #endif
 
@@ -372,17 +418,13 @@ extern "C" {
 #define H_BRIDGE_STATE_OPEN_H           4
 
 
-#define VALID                           1
-#define INVALID                         0
-#define MACHINE_ERR                     1
-#define MACHINE_OK                      0
 
 #if(FAN_MODEL == FAN_MODEL_AC_75W)
 #define FAN_EFFICACY_NUM_MAX            25
 
 #endif
 #if(FAN_MODEL == FAN_MODEL_DC_100W)
-#define FAN_EFFICACY_NUM_MAX            80    //实际1秒会有194个FG信号，台达22053
+#define FAN_EFFICACY_NUM_MAX            50    //实际1秒会有194个FG信号，台达22053
 
 #endif
 
@@ -401,8 +443,14 @@ extern "C" {
 
 //>>>>>>>>>>>>>>>>以下是直流有刷推杆电机和福佑风机的电流参数表>>>>>>>>>>>>>>>>>
 
+#if (INLET_MOTOR_FLAG == VALID)
+      #define DC_MOTOR0_MA		VALID                   //PCB 位号 P5       //进风
 
-#define DC_MOTOR0_MA		VALID                   //PCB 位号 P5       //进风
+#else
+      #define DC_MOTOR0_MA		INVALID                 //PCB 位号 P5       //进风
+
+#endif
+
 #define DC_MOTOR1_MA		VALID                   //PCB 位号 P6       //排风
 #define DC_MOTOR2_MA		INVALID                 //实际没有这个通道
 #define DC_MOTOR3_MA		INVALID                 //实际没有这个通道

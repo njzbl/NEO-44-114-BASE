@@ -460,7 +460,7 @@ void adcSampling(void)
                 if(j == 0) {
                     if(motorRunAngle[j] > 10 && mMotorMaxCurrentTime[0] > motorMaxCurHoldTimeMsThreshold) {  //压紧胶条时间长度大于500ms
 		                mMachineSta.motorPowerSta[MOTOR1_LOGIC_CHN] = MOTOR_POWER_DOWN_STA;
-                        HAL_GPIO_WritePin(MOTOR_PWR_CTRL1_GPIO_Port, MOTOR_PWR_CTRL1_Pin, GPIO_PIN_RESET);
+                        // HAL_GPIO_WritePin(MOTOR_PWR_CTRL1_GPIO_Port, MOTOR_PWR_CTRL1_Pin, GPIO_PIN_RESET);
                         // printf("=========mCount.motorCMD510BRunSta[0] = %d adcPower[%d] = %d motorRunAngle[%d] = %d\r\n",mCount.motorCMD510BRunSta[0],j, mMotorAdc[j].CurrentVal,j,motorRunAngle[j]);
                         printf("++++++++++++++++++++++++mCount.motorCMD510BRunSta[0] = %d adcPower[%d] = %d motorRunAngle[%d] = %d\r\n",mCount.motorCMD510BRunSta[0],j, mMotorAdc[j].CurrentVal,j,motorRunAngle[j]);
                     }
@@ -468,7 +468,7 @@ void adcSampling(void)
                 else if(j == 1) {
                     if(motorRunAngle[j] > 10 && mMotorMaxCurrentTime[1] > motorMaxCurHoldTimeMsThreshold) {  //压紧胶条时间长度大于500ms
 		                mMachineSta.motorPowerSta[MOTOR2_LOGIC_CHN] = MOTOR_POWER_DOWN_STA;
-                        HAL_GPIO_WritePin(MOTOR_PWR_CTRL2_GPIO_Port, MOTOR_PWR_CTRL2_Pin, GPIO_PIN_RESET);
+                        // HAL_GPIO_WritePin(MOTOR_PWR_CTRL2_GPIO_Port, MOTOR_PWR_CTRL2_Pin, GPIO_PIN_RESET);
                         printf("+++++++++++++++++++++++mCount.motorCMD510BRunSta[1] = %d adcPower[%d] = %d motorRunAngle[%d] = %d\r\n",mCount.motorCMD510BRunSta[1],j, mMotorAdc[j].CurrentVal,j,motorRunAngle[j]);
                     }
                 }
@@ -476,6 +476,7 @@ void adcSampling(void)
         }
         // printf("---------mMotorAdc.CurrentVal = %d,%d,%d %d--------------\r\n", mMotorAdc[0].CurrentVal, mMotorAdc[1].CurrentVal, mMotorAdc[2].CurrentVal,mNtc10KAdc.CurrentVal);
         // printf("---------mMotorAdc.CurrentVal = %d,%d,%d --------------\r\n", adcPower[0] / ADC_DIVISION_VAL, adcPower[1] / ADC_DIVISION_VAL, adcPower[2] / ADC_DIVISION_VAL);
+#if (DOOR_CUR_VAL_MODE == CURRENT_MODE)
         if(mMotorAdc[1].CurrentVal > 10)
             mMachineModbusSta.outWindowsCurVal = mMotorAdc[1].CurrentVal;
         else
@@ -484,6 +485,7 @@ void adcSampling(void)
             mMachineModbusSta.inWindows1CurVal = mMotorAdc[0].CurrentVal;
         else
             mMachineModbusSta.inWindows1CurVal = 0;
+#endif
         mMotorAdc[0].DivNum = 0; //新的一轮采集开始
         mMotorAdc[0].SamplingFalg = 0;   //清除采集完成标识
         mMotorAdc[0].CurFlag = 1;
@@ -523,7 +525,7 @@ void adcSampling(void)
         mNtc10KAdc.CurrentVal = i - 55;
         mMachineModbusSta.Ntctemperature = mNtc10KAdc.CurrentVal;
         mNtc10KAdc.DivNum = 0; //新的一轮采集开始
-        // mNtc10KAdc.SamplingFalg = 0;   //清除采集完成标识
+        mNtc10KAdc.SamplingFalg = 0;   //清除采集完成标识
         mNtc10KAdc.CurFlag = 1;
     }
 }
@@ -550,12 +552,7 @@ void adcCallback(void)
 
     mMotorAdc[0].DivVal[mMotorAdc[0].DivNum] = aADCxConvertedData[ADC_M1_CURRENT_CH];
     mMotorAdc[1].DivVal[mMotorAdc[0].DivNum] = aADCxConvertedData[ADC_M2_CURRENT_CH];
-    mMotorAdc[0].DivNum++;
-    if(mMotorAdc[0].DivNum == ADC_DIVISION_VAL) {       //这里只判断[0]是为了减少中断处理时间，20us一个中断。 
-        mMotorAdc[0].DivNum = 0;
-        mMotorAdc[0].SamplingFalg = 1;
-    }
-    
+
     if(mMotorAdc[0].DivVal[mMotorAdc[0].DivNum] >= MAX_CURRENT_MOTOR) {  //5A  ，实测效果很好，MOS管不会坏 ， 2025-07-16
         mPtMotorCurrentCount[0]++;
         if(mPtMotorCurrentCount[0] > 30) {              //参数为5时，短路时峰值电流为16A，持续时间约100us, 取值10的原因：辰鑫400350DW电机，启动瞬间会有4个周期电流值超过2625，
@@ -563,8 +560,7 @@ void adcCallback(void)
             HAL_GPIO_WritePin(MOTOR_PWR_CTRL1_GPIO_Port, MOTOR_PWR_CTRL1_Pin, GPIO_PIN_RESET);
             mPtMotorCurrentMax[4]++;
         }
-
-        if(mMotorAdc[0].DivVal[mMotorAdc[0].DivNum] > mPtMotorCurrentMax[1]) {
+        if(mMotorAdc[0].DivVal[mMotorAdc[0].DivNum] > mPtMotorCurrentMax[0]) {
             mPtMotorCurrentMax[0] = mMotorAdc[0].DivVal[mMotorAdc[0].DivNum];
 
         }
@@ -585,7 +581,7 @@ void adcCallback(void)
     }
     if(mMotorAdc[1].DivVal[mMotorAdc[0].DivNum] >= MAX_CURRENT_MOTOR) {
         mPtMotorCurrentCount[1]++;
-        if(mPtMotorCurrentCount[1] > 30) {
+        if(mPtMotorCurrentCount[1] > 30) {       //30: 30 * 20 us = 600 us ,MOS动作时间约150us ，短路时峰值电流为24A，20260819 , 合计时间约800us
 		    mMachineSta.motorPowerSta[MOTOR2_LOGIC_CHN] = MOTOR_POWER_DOWN_STA;
             HAL_GPIO_WritePin(MOTOR_PWR_CTRL2_GPIO_Port, MOTOR_PWR_CTRL2_Pin, GPIO_PIN_RESET);
             mPtMotorCurrentMax[5]++;
@@ -609,6 +605,11 @@ void adcCallback(void)
         //         mPtMotorPushCurrentCount[1] = 0;
         //     }
         // }
+    }
+    mMotorAdc[0].DivNum++;
+    if(mMotorAdc[0].DivNum >= ADC_DIVISION_VAL) {       //这里只判断[0]是为了减少中断处理时间，20us一个中断。 
+        mMotorAdc[0].DivNum = 0;
+        mMotorAdc[0].SamplingFalg = 1;
     }
     mPowerAdcB.DivVal[mNtc10KAdc.DivNum] = aADCxConvertedData[ADC_POWER_VALID_CH];
     mNtc10KAdc.DivVal[mNtc10KAdc.DivNum] = aADCxConvertedData[ADC_BOARD_TEMP_CH];

@@ -61,6 +61,7 @@
 #define DELAY_5S                        500
 #define DELAY_6S                        600
 #define DELAY_7S                        700
+#define DELAY_8S                        800
 #define DELAY_14S                       1400
 #define DELAY_15S                       1500
 #define DELAY_16S                       1600
@@ -90,6 +91,11 @@
 #define KEY_VAL_OPEN_WIN                            GPIO_PIN_RESET
 #define KEY_VAL_CLOSE_WIN                           GPIO_PIN_SET
 #define KEY_VAL_INVALID                             0xff
+
+#define DOOR_OPEN_SWITCH_ON                         GPIO_PIN_SET
+#define DOOR_OPEN_SWITCH_OFF                        GPIO_PIN_RESET
+#define DOOR_CLOSE_SWITCH_ON                        GPIO_PIN_SET
+#define DOOR_CLOSE_SWITCH_OFF                       GPIO_PIN_RESET
 /*****************************************************************************************************************************
  * Enumeration Definition
  ****************************************************************************************************************************/

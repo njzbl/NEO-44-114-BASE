@@ -134,7 +134,8 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 	mDoorSta.doorPositionFinal[mDoorSta.motorCh]++;
 	mOSTM16_SysTick20us_CMD510B_M[mDoorSta.motorCh] = 0;	//clear Motor A pluse count, if the number over 500ms is NG.
 	if(mKeySta.nowKeySta == OPEN_DOOR) {
-		mDoorSta.nowDoorPositionCMD510BM[mDoorSta.motorCh]++;
+		mDoorSta.nowDoorPositionCMD510BM[mDoorSta.motorCh]++;		//实际用来记录蜗轮蜗杆电机
+		mDoorSta.nowDoorPositionDCM[mDoorSta.motorCh]++;			//实际用来记录推杆电机
 		if(mDoorSta.nowDoorPositionCMD510BM[mDoorSta.motorCh] >= FARTHEST_POSITION_DC_B_MOTOR) {
 
 			if(mDebugFlagPowerDownCMD510B[mDoorSta.motorCh][1] == 0) {
@@ -148,8 +149,12 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 	}
 	else if(mKeySta.nowKeySta == CLOSE_DOOR) {	//关百叶时 通过堵转保护限制位置。
 		mDoorSta.nowDoorPositionCMD510BM[mDoorSta.motorCh]--;
+		mDoorSta.nowDoorPositionDCM[mDoorSta.motorCh]--;
 		if(mDoorSta.nowDoorPositionCMD510BM[mDoorSta.motorCh] <= 0) {
 			mDoorSta.nowDoorPositionCMD510BM[mDoorSta.motorCh] = 0;
+		}
+		if(mDoorSta.nowDoorPositionDCM[mDoorSta.motorCh] <= 0) {
+			mDoorSta.nowDoorPositionDCM[mDoorSta.motorCh] = 0;
 		}
 	}
 
@@ -463,9 +468,9 @@ int MainControl(void)
 		if (mCount.fan >= DELAY_2S) {	//直流风扇功率较大，为了和电机分时启动降低供电电源最大功率的需求			
 			StartFan();
 		}
-		else {
-			mCount.fanRunSta = FAN_EFFICACY_NUM_MAX - 15; //直流风扇延时启动，有可能在随后的4秒内转速不够而造成误判。同时可以避免风扇未接时的无法检出。
-		}	
+		// else {		//zbl change fan FG Hz , 20260604
+		// 	mCount.fanRunSta = FAN_EFFICACY_NUM_MAX - 15; //直流风扇延时启动，有可能在随后的4秒内转速不够而造成误判。同时可以避免风扇未接时的无法检出。
+		// }	
 #else
 		StartFan();
 #endif
@@ -484,8 +489,9 @@ int MainControl(void)
 			if(mKeySta.nowKeySta == OPEN_DOOR) {	//闭合气感信号，要求开窗、开风机
 #endif
 				if(mFanAdc.CurrentVal >= mFanAdc.ThresholdMin && mFanAdc.CurrentVal <= mFanAdc.ThresholdMax) {
-					mCount.fanRunSta++;		//记录风机正常电流值在一个检测周期内的步数
-					// printf("mFanAdc.CurrentVal = %d mFanAdc.Threshold = %d mCount.fanRunSta = %d\r\n",mFanAdc.CurrentVal,mFanAdc.Threshold,mCount.fanRunSta);
+					// mCount.fanRunSta++;		//记录风机正常电流值在一个检测周期内的步数 		//zbl change fan FG Hz , 20260604
+					mFanSta.fanFg++;
+					// printf("mFanAdc.CurrentVal = %d mFanAdc.Threshold = %d mFanSta.fanFg = %d\r\n",mFanAdc.CurrentVal,mFanAdc.Threshold,mFanSta.fanFg);
 				}
 #if (STOP_FAN_CUR_CHECK == 0)
 			}
@@ -506,10 +512,46 @@ int MainControl(void)
 		delay_total_2 = DELAY_26S;
 	}
 #endif
+#if (DOOR_CUR_VAL_MODE == DEGREE_MODE)
+
+	if(mCount.motor < delay_total_1) {
+		mMachineModbusSta.outWindowsCurVal = mDoorSta.nowDoorPositionDCM[MOTOR_OUT_CHN] * 75 / 2040;
+		mMachineModbusSta.inWindows1CurVal = mDoorSta.nowDoorPositionDCM[MOTOR_IN_1_CHN] * 75 / 2040;
+		mMachineModbusSta.inWindows2CurVal = 0;
+	}
+#endif
+
 	if(mCount.motor >= delay_total_1 && mCount.motor < delay_total_2)	{//6000 ms 要出输出报告
 		mMachineSta.activation = STOP_STA;
 		// PowerDownInShadesMotorA();
 		// PowerDownInShadesMotorB();
+		// mMachineModbusSta.outWindowsCurVal = mDoorSta.nowDoorPositionDCM[MOTOR_OUT_CHN];
+		// mMachineModbusSta.inWindows1CurVal = mDoorSta.nowDoorPositionDCM[MOTOR_IN_1_CHN];
+		// printf("mMachineModbusSta.outWindowsCurVal = %d,%d\r\n",mMachineModbusSta.outWindowsCurVal,mMachineModbusSta.inWindows1CurVal);
+		if(getDoorOpenSta1() == DOOR_OPEN_SWITCH_ON) {
+			mDoorSta.doorSensorLSta[MOTOR1_LOGIC_CHN] = VALID;
+		}
+		else {
+			mDoorSta.doorSensorLSta[MOTOR1_LOGIC_CHN] = INVALID;		//变量初始化时赋值为0
+		}
+		if(getDoorOpenSta2() == DOOR_OPEN_SWITCH_ON) {
+			mDoorSta.doorSensorLSta[MOTOR2_LOGIC_CHN] = VALID;
+		}
+		else {
+			mDoorSta.doorSensorLSta[MOTOR2_LOGIC_CHN] = INVALID;		//变量初始化时赋值为0
+		}
+		// if(mKeySta.nowKeySta == OPEN_DOOR) {
+		// 	if(mDoorSta.doorSensorLSta[MOTOR1_LOGIC_CHN] == VALID) {
+		// 		mMachineModbusSta.outWindowsCurVal = 75;
+		// 	}
+		// 	if(mDoorSta.doorSensorLSta[MOTOR2_LOGIC_CHN] == VALID) {
+		// 		mMachineModbusSta.inWindows1CurVal = 75;
+		// 	}			
+		// }
+		// else {
+		// 	mMachineModbusSta.outWindowsCurVal = mCount.motorCMD510BRunSta[MOTOR_OUT_CHN];
+		// 	mMachineModbusSta.inWindows1CurVal = mCount.motorCMD510BRunSta[MOTOR_IN_1_CHN];
+		// }
 		StopExShades();  //临时测试把这条语句删除，实际使用过程中不可删除。  //zbl 20240522
 		if(mDoorRunNumSta <= 2) {	//上电后第一次开/关门命令，不理会电机状态，因为不知道上电时门状态。
 			mOutputSta.motorS1 = MACHINE_OK;  //默认OK
@@ -696,12 +738,12 @@ int MainControl(void)
 	}
 
 	
-	if(mCount.fan >= DELAY_6S) {	//风机独立开判断是为了风机在一直旋转，不停的检测风机的状态，当第一个5秒来到后，每1秒检测一次状态。
+	if(mCount.fan >= DELAY_7S) {	//风机独立开判断是为了风机在一直旋转，不停的检测风机的状态，当第一个5秒来到后，每1秒检测一次状态。
 		// printf("mAutoVal485 = %d getCtrlStaModbus() = %d mTestVal485 = %d \r\n",mAutoVal485, getCtrlStaModbus(),mTestVal485);
 
         // mCount.fanRunSta = mFanSta.fanFg;  //直流风扇，通过FG信号判断是否在旋转。目前还没实现
         if(mKeySta.nowKeySta == OPEN_DOOR) {	//只有开风机的时候才会更新风机状态  ， 进风百叶是没有风机的，为了使生产方便，代码都保持一致，只是进风百叶不连接S2端子。
-			if(mCount.fanRunSta >= FAN_EFFICACY_NUM_MAX) {
+			if(mFanSta.fanFg >= FAN_EFFICACY_NUM_MAX) { 	//zbl change fan FG Hz , 20260604
 				mOutputSta.fanS2 = MACHINE_OK;
 			}
 			else {
@@ -709,13 +751,13 @@ int MainControl(void)
 			}
 		}
 // #if(MOTOR_MODEL == DLK_TG_60W)          //25°C 电机推出时完全堵转，mMotorAdc[j].CurrentVal 瞬间最大值3275，然后逐渐降低最后一直稳定在2800左右，此时稳压电源读数为：2.6 ~ 2.8A ，在低温-30°C时小裴测试稳压电源读数2.9A
-//             	printf("mOutputSta.fanS2 = %d; mCount.fanRunSta = %d mDoorSta.motorCurNum[0,1]=%d,%d mMotorAdc[0:2].CurrentVal = %d_%d_%d\r\n",mOutputSta.fanS2,mCount.fanRunSta,mDoorSta.motorCurNum[0],mDoorSta.motorCurNum[1],mMotorAdc[0].CurrentVal,mMotorAdc[1].CurrentVal,mMotorAdc[2].CurrentVal);
+//             	printf("mOutputSta.fanS2 = %d; mFanSta.fanFg = %d mDoorSta.motorCurNum[0,1]=%d,%d mMotorAdc[0:2].CurrentVal = %d_%d_%d\r\n",mOutputSta.fanS2,mFanSta.fanFg,mDoorSta.motorCurNum[0],mDoorSta.motorCurNum[1],mMotorAdc[0].CurrentVal,mMotorAdc[1].CurrentVal,mMotorAdc[2].CurrentVal);
 // #else
-// 				printf("mOutputSta.fanS2 = %d; mCount.fanRunSta = %d mDoorSta.motorCurNum[0,1]=%d,%d\r\n",mOutputSta.fanS2,mCount.fanRunSta,mDoorSta.motorCurNum[0],mDoorSta.motorCurNum[1]);
+// 				printf("mOutputSta.fanS2 = %d; mFanSta.fanFg = %d mDoorSta.motorCurNum[0,1]=%d,%d\r\n",mOutputSta.fanS2,mFanSta.fanFg,mDoorSta.motorCurNum[0],mDoorSta.motorCurNum[1]);
 // #endif
 #if (STOP_FAN_CUR_CHECK == 1)      
         else {
-            if(mCount.fanRunSta >= 35) {    //如果全速旋转，这个值应该是50。
+            if(mFanSta.fanFg >= 35) {	//zbl change fan FG Hz , 20260604
 				mOutputSta.fanS2 = MACHINE_ERR;     
                 mMachineModbusSta.FanSta2 = ABNORMAL_MODE; //说明不该旋转的时候旋转了
 			}
@@ -729,10 +771,7 @@ int MainControl(void)
 		if(mDoorRunNumSta < 3) {
 			mOutputSta.fanS2 = MACHINE_OK;
 		}
-        mFanSta.fanFg = mCount.fanRunSta >> 2;
-		mCount.fanRunSta = 0;
-		mCount.fan = DELAY_5S; //当第一个6秒来到后，每1秒检测一次风机状态。
-
+		mCount.fan = DELAY_6S; //当第一个6秒来到后，每1秒检测一次风机状态。
 
 #if (MACHINE_FEEDBACK_MODE == NORMALLY_CLOSE)  //华为和阳光电源，采用软件强拉常闭触点，更为科学。但是阳光电源实际取消的故障和状态两个干接点信号输出。
 		if(mOutputSta.motorS1 == MACHINE_OK && mOutputSta.fanS2 == MACHINE_OK) {		//这个if语句放在这里降低了代码的可移植性，在移植时特别要注意
@@ -825,6 +864,11 @@ int MainControl(void)
                 mDoorSta.motorCurNum[i] = 5000;
             }
         }
+		else {
+			for(i = 0 ;i < MOTOR_BDC_NUMBER_MAX;i++) {
+				mDoorSta.motorFG[i] = mCount.motorCMD510BRunSta[i];
+			}
+		}
 #if (FG_CUR_TYPE == 0)  //0:直流有刷电机用FG信号判定电机工作转态；  1:直流有刷电机用电流信号判定电机工作转态；
         for(i = 0 ;i < MOTOR_BDC_NUMBER_MAX;i++) {
             fg_cur[i] = mDoorSta.motorFG[i];
@@ -875,10 +919,10 @@ int MainControl(void)
             }
         }
 	#if(FAN_MODEL == FAN_MODEL_DC_100W)
-		if(mFanSta.fanFg > 8000) {	//第一次进入时是刚启动的前5秒累计值。
-			mFanSta.fanFg = 3000;
+		if(mFanSta.fanFg > 200) {	//第一次进入时是刚启动的前5秒累计值。
+			mFanSta.fanFg = 200;		//DC20053风扇每分钟转速6000，所以 6000 / 30 = 200；
 		}
-		mMachineModbusSta.fan1Current = mFanSta.fanFg;  //风扇装束或者电流，这里先实现的是转速。
+		mMachineModbusSta.fan1Current = mFanSta.fanFg * 30;  //风扇装束或者电流，这里先实现的是转速。
 	#endif
 //<<<<<<<<485 反馈状态<<<<<<<<<<<<<<
 
@@ -890,14 +934,12 @@ int MainControl(void)
         if(mKeySta.nowKeySta == CLOSE_DOOR)     //这样写是简化判断逻辑。总之，只有在手动气感信号关闭百叶的时候，485信号才有效。
             mManualFlag = FALSE;
 	}
-	else if(mCount.fan < DELAY_5S) {		
-		if((mCount.fan / DELAY_1S) == 0) {
-			mFanSta.fanFg = (mCount.fanRunSta >> 2);
-		}
-		else {
-			mFanSta.fanFg = (mCount.fanRunSta >> 2) / (mCount.fan / DELAY_1S);
-		}
-		mMachineModbusSta.fan1Current = mFanSta.fanFg;
+	else if(mCount.fan < DELAY_6S) {		//20053 DC风扇，FG 193Hz 193 * 30 (电频率，2级对) = 5790  实测 5730 比较一致
+
+	#if(FAN_MODEL == FAN_MODEL_DC_100W)
+		mMachineModbusSta.fan1Current = mFanSta.fanFg * 30;
+
+	#endif
 	}
 	return retn;
 }

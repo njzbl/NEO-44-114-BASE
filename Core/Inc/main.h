@@ -101,7 +101,6 @@ void Error_Handler(void);
 #define ON_STATE1_EXTI_IRQn EXTI4_15_IRQn
 #define OFF_STATE1_Pin GPIO_PIN_8
 #define OFF_STATE1_GPIO_Port GPIOA
-#define OFF_STATE1_EXTI_IRQn EXTI4_15_IRQn
 #define I2C_SCL_Pin GPIO_PIN_9
 #define I2C_SCL_GPIO_Port GPIOA
 #define DC_FAN_CTRL_Pin GPIO_PIN_6
@@ -121,7 +120,6 @@ void Error_Handler(void);
 #define ON_STATE2_EXTI_IRQn EXTI2_3_IRQn
 #define OFF_STATE2_Pin GPIO_PIN_4
 #define OFF_STATE2_GPIO_Port GPIOB
-#define OFF_STATE2_EXTI_IRQn EXTI4_15_IRQn
 #define PWM2_Pin GPIO_PIN_5
 #define PWM2_GPIO_Port GPIOB
 #define DIR2_Pin GPIO_PIN_8

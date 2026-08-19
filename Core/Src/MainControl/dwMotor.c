@@ -25,10 +25,11 @@ __IO uint32_t mOSTM16_SysTick20us_A = 0;
 __IO uint32_t mOSTM16_SysTick20us_K = 0;
 __IO uint32_t mOSTM16_SysTick10ms_K = 0;
 __IO uint32_t mOSTM16_SysTick1ms_S = 0;
+__IO uint32_t mOSTM16_SysTick20us_Fan = 0;
 __IO uint32_t mOSTM16_SysTick20us_CMD510B_M[MOTOR_BDC_NUMBER_MAX] = {0};
 __IO uint8_t mDebugFlagPowerDownCMD510B[MOTOR_BDC_NUMBER_MAX][5];
 __IO uint32_t mAddFgVal = 0;
-
+extern __IO stFAN_STA mFanSta;
 #define THRESHOLD_LEN                   30
 #define THRESHOLD_LEN_DEC_1          (THRESHOLD_LEN - 1)
 
@@ -96,9 +97,15 @@ void dwMotorCallback(void)
     mOSTM16_SysTick20us_A++;
     mOSTM16_SysTick20us_K++;
     mOSTM16_SysTick1ms_S++;
+    mOSTM16_SysTick20us_Fan++;
     mOSTM16_SysTick20us_CMD510B_M[0]++;
     mOSTM16_SysTick20us_CMD510B_M[1]++;
     mOSTM16_SysTick20us_CMD510B_M[2]++;
+    if(mOSTM16_SysTick20us_Fan >= 50000) {   //20us * 50000 = 1S
+        mOSTM16_SysTick20us_Fan = 0;
+        mFanSta.fanFg = mCount.fanRunSta;   //mFanSta.fanFg : 记录实时的每秒转速，因为是2极对，对应每分钟转速需要 * 30
+        mCount.fanRunSta = 0;
+    }
     dwMotorCtrl(0);
     dwMotorCtrl(1);
     dwMotorCtrl(2);
