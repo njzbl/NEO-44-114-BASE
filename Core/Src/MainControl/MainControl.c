@@ -796,23 +796,26 @@ int MainControl(void)
 
 #if (MACHINE_FEEDBACK_MODE == NORMALLY_OPEN)  //MACHINE_QL_MODE，采用常开触点
 		if(mOutputSta.motorS1 == MACHINE_OK && mOutputSta.fanS2 == MACHINE_OK) {		//这个if语句放在这里降低了代码的可移植性，在移植时特别要注意
-			// printf("setSysErr(0);  ");      // 正常时输出开路状态
+			printf("setSysErr(0);  ");      // 正常时输出开路状态
 			setSysErr(OUT_STATUS_OPEN);
 		}
 		else {
 			mMachineModbusSta.machineWorkMode = FAILURE_MODE;
-			// printf("setSysErr(1);  ");      // 异常时输出闭合状态
+			printf("setSysErr(1);  ");      // 异常时输出闭合状态
 			setSysErr(OUT_STATUS_CLOSE);
 		}
 		if(mKeySta.nowKeySta == OPEN_DOOR) {
-			// printf("setSysSta(1); %d_%d  FAN_%d,%d,%d\r\n",mOutputSta.motorS1,mOutputSta.fanS2,mFanAdc.CurrentVal,mFanAdc.ThresholdMin,mFanAdc.ThresholdMax);
+			printf("setSysSta(1); %d_%d  FAN_%d,%d,%d\r\n",mOutputSta.motorS1,mOutputSta.fanS2,mFanAdc.CurrentVal,mFanAdc.ThresholdMin,mFanAdc.ThresholdMax);
 			// printf("setSysSta(1); mNtc10KAdc.CurrentVal = %d\r\n",mNtc10KAdc.CurrentVal);
 			setSysSta(1);
 		}
 		else {
+			printf("setSysSta(0); %d_%d  FAN_%d,%d,%d\r\n",mOutputSta.motorS1,mOutputSta.fanS2,mFanAdc.CurrentVal,mFanAdc.ThresholdMin,mFanAdc.ThresholdMax);
 			// printf("setSysSta(0); mNtc10KAdc.CurrentVal = %d\r\n",mNtc10KAdc.CurrentVal);
 			setSysSta(0);
 		}
+		printf("mOutputSta.fanS2 = %d; mFanSta.fanFg = %d mDoorSta.motorCurNum[0,1]=%d,%d\r\n",mOutputSta.fanS2,mFanSta.fanFg,mDoorSta.motorCurNum[0],mDoorSta.motorCurNum[1]);
+
 #endif
 #if(MACHINE_DEBUG == DEBUG_ENABLED)
 		printf("%d mCount.motorCMD510BRunSta[0]:B:C = %d_%d_%d\r\n",mKeySta.nowKeySta,mCount.motorCMD510BRunSta[0],mCount.motorCMD510BRunSta[1],mCount.motorCMD510BRunSta[2]);

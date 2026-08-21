@@ -103,8 +103,10 @@ void dwMotorCallback(void)
     mOSTM16_SysTick20us_CMD510B_M[2]++;
     if(mOSTM16_SysTick20us_Fan >= 50000) {   //20us * 50000 = 1S
         mOSTM16_SysTick20us_Fan = 0;
+#if(FAN_MODEL == FAN_MODEL_DC_100W)
         mFanSta.fanFg = mCount.fanRunSta;   //mFanSta.fanFg : 记录实时的每秒转速，因为是2极对，对应每分钟转速需要 * 30
         mCount.fanRunSta = 0;
+#endif
     }
     dwMotorCtrl(0);
     dwMotorCtrl(1);

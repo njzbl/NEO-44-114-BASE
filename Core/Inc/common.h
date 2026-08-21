@@ -50,7 +50,7 @@ extern "C" {
 
 #define NEO_400350_DW_BASE              0
 #define NEO_320270_MAX_BASE             1       //迪洛克推杆 + DC风扇 + NO
-#define NEO_400350_DLK_TG_60W_BASE      2
+#define NEO_400350_DLK_TG_60W_BASE      2       //迪洛克推杆 + AC风扇 + NO
 #define NEO_400350_DLK_FB_NO_BASE       3       //常开反馈
 #define NEO_400350_DLK_FB_NC_HW         4       //常闭反馈， 华为版本,阳光电源版本
 #define NEO_400350_DLK_FB_NO_HY         5       //广州电力公司版本
@@ -60,7 +60,7 @@ extern "C" {
 #define NEO_400350_DLK_FB_MB_TSL        9       //迪洛克防爆推杆 + DC风扇 + modbus， 特斯拉版本
 #define NEO_320270_MAX_BASE_OM         10       //迪洛克推杆 + DC风扇 + NO + 单排风
 
-#define MACHINE_TYPE_CUSTOMER           NEO_320270_MAX_BASE
+#define MACHINE_TYPE_CUSTOMER           NEO_400350_DLK_TG_60W_BASE
 
 #define MODBUS_REG_HOLDING_START_1      1
 #define MODBUS_REG_HOLDING_START_21     21
