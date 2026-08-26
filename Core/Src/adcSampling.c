@@ -460,7 +460,9 @@ void adcSampling(void)
                 if(j == 0) {
                     if(motorRunAngle[j] > 10 && mMotorMaxCurrentTime[0] > motorMaxCurHoldTimeMsThreshold) {  //压紧胶条时间长度大于500ms
 		                mMachineSta.motorPowerSta[MOTOR1_LOGIC_CHN] = MOTOR_POWER_DOWN_STA;
-                        // HAL_GPIO_WritePin(MOTOR_PWR_CTRL1_GPIO_Port, MOTOR_PWR_CTRL1_Pin, GPIO_PIN_RESET);
+#if(MOTOR_MODEL == WG_TG)       //微光电机内部没有堵转保护，所以一定要加过载保护，其他电机过载保护阈值需要调试后再增加
+                        HAL_GPIO_WritePin(MOTOR_PWR_CTRL1_GPIO_Port, MOTOR_PWR_CTRL1_Pin, GPIO_PIN_RESET);
+#endif
                         // printf("=========mCount.motorCMD510BRunSta[0] = %d adcPower[%d] = %d motorRunAngle[%d] = %d\r\n",mCount.motorCMD510BRunSta[0],j, mMotorAdc[j].CurrentVal,j,motorRunAngle[j]);
                         printf("++++++++++++++++++++++++mCount.motorCMD510BRunSta[0] = %d adcPower[%d] = %d motorRunAngle[%d] = %d\r\n",mCount.motorCMD510BRunSta[0],j, mMotorAdc[j].CurrentVal,j,motorRunAngle[j]);
                     }
@@ -468,7 +470,9 @@ void adcSampling(void)
                 else if(j == 1) {
                     if(motorRunAngle[j] > 10 && mMotorMaxCurrentTime[1] > motorMaxCurHoldTimeMsThreshold) {  //压紧胶条时间长度大于500ms
 		                mMachineSta.motorPowerSta[MOTOR2_LOGIC_CHN] = MOTOR_POWER_DOWN_STA;
-                        // HAL_GPIO_WritePin(MOTOR_PWR_CTRL2_GPIO_Port, MOTOR_PWR_CTRL2_Pin, GPIO_PIN_RESET);
+#if(MOTOR_MODEL == WG_TG)
+                        HAL_GPIO_WritePin(MOTOR_PWR_CTRL2_GPIO_Port, MOTOR_PWR_CTRL2_Pin, GPIO_PIN_RESET);
+#endif
                         printf("+++++++++++++++++++++++mCount.motorCMD510BRunSta[1] = %d adcPower[%d] = %d motorRunAngle[%d] = %d\r\n",mCount.motorCMD510BRunSta[1],j, mMotorAdc[j].CurrentVal,j,motorRunAngle[j]);
                     }
                 }
