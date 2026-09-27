@@ -465,9 +465,9 @@ int MainControl(void)
 	//>>>>>>>>>控制风扇>>>>>>>>>>>>>>>>>>>>
 	if(mKeySta.nowKeySta == OPEN_DOOR) {
 #if(FAN_MODEL == FAN_MODEL_DC_100W)
-		if (mCount.fan >= DELAY_2S) {	//直流风扇功率较大，为了和电机分时启动降低供电电源最大功率的需求			
+		// if (mCount.fan >= DELAY_2S) {	//直流风扇功率较大，为了和电机分时启动降低供电电源最大功率的需求			
 			StartFan();
-		}
+		// }
 		// else {		//zbl change fan FG Hz , 20260604
 		// 	mCount.fanRunSta = FAN_EFFICACY_NUM_MAX - 15; //直流风扇延时启动，有可能在随后的4秒内转速不够而造成误判。同时可以避免风扇未接时的无法检出。
 		// }	

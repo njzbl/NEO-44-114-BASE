@@ -62,7 +62,7 @@ extern "C" {
 #define NEO_400350_WG_TG_ACFAN_BASE    11       //微光推杆电机 + AC风扇 + NO
 #define NEO_400350_DLK_FB_NO           12       //迪洛克防爆推杆 + AC风扇 + NO
 
-#define MACHINE_TYPE_CUSTOMER           NEO_400350_DLK_TG_60W_BASE
+#define MACHINE_TYPE_CUSTOMER           NEO_400350_DLK_TG_DCFAN_NC
 
 #define MODBUS_REG_HOLDING_START_1      1
 #define MODBUS_REG_HOLDING_START_21     21

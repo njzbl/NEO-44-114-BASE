@@ -353,7 +353,7 @@ void adcSampling(void)
                 maxCurThreshold[j] = 7500;
             }
             motorRunAngle[j] = mDoorSta.motorCurNum[j];
-            motorMaxCurHoldTimeMsThreshold = 500;
+            motorMaxCurHoldTimeMsThreshold = 600;           //600ms（对应3.4A电流）的延时可以达到电机的最大扭矩，500ms（对应3.0A电流）无法达到。
 #endif
 #if(MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_YLSZ23_FB)
             maxCurThreshold[j] = 2000;                      //待机电流0.04mA  空载 500 ~ 600mA   
@@ -460,28 +460,32 @@ void adcSampling(void)
                 if(j == 0) {
                     if(motorRunAngle[j] > 10 && mMotorMaxCurrentTime[0] > motorMaxCurHoldTimeMsThreshold) {  //压紧胶条时间长度大于500ms
 		                mMachineSta.motorPowerSta[MOTOR1_LOGIC_CHN] = MOTOR_POWER_DOWN_STA;
-#if(MOTOR_MODEL == WG_TG)       //微光电机内部没有堵转保护，所以一定要加过载保护，其他电机过载保护阈值需要调试后再增加
+#if(MOTOR_MODEL == WG_TG || MOTOR_MODEL == DLK_TG_60W)       //微光电机内部没有堵转保护，所以一定要加过载保护，其他电机过载保护阈值需要调试后再增加
                         HAL_GPIO_WritePin(MOTOR_PWR_CTRL1_GPIO_Port, MOTOR_PWR_CTRL1_Pin, GPIO_PIN_RESET);
 #endif
                         // printf("=========mCount.motorCMD510BRunSta[0] = %d adcPower[%d] = %d motorRunAngle[%d] = %d\r\n",mCount.motorCMD510BRunSta[0],j, mMotorAdc[j].CurrentVal,j,motorRunAngle[j]);
-                        printf("++++++++++++++++++++++++mCount.motorCMD510BRunSta[0] = %d adcPower[%d] = %d motorRunAngle[%d] = %d\r\n",mCount.motorCMD510BRunSta[0],j, mMotorAdc[j].CurrentVal,j,motorRunAngle[j]);
+                        // printf("++++++++++++++++++++++++mCount.motorCMD510BRunSta[0] = %d adcPower[%d] = %d motorRunAngle[%d] = %d\r\n",mCount.motorCMD510BRunSta[0],j, mMotorAdc[j].CurrentVal,j,motorRunAngle[j]);
                     }
                 }
                 else if(j == 1) {
                     if(motorRunAngle[j] > 10 && mMotorMaxCurrentTime[1] > motorMaxCurHoldTimeMsThreshold) {  //压紧胶条时间长度大于500ms
 		                mMachineSta.motorPowerSta[MOTOR2_LOGIC_CHN] = MOTOR_POWER_DOWN_STA;
-#if(MOTOR_MODEL == WG_TG)
+#if(MOTOR_MODEL == WG_TG || MOTOR_MODEL == DLK_TG_60W)
                         HAL_GPIO_WritePin(MOTOR_PWR_CTRL2_GPIO_Port, MOTOR_PWR_CTRL2_Pin, GPIO_PIN_RESET);
 #endif
-                        printf("+++++++++++++++++++++++mCount.motorCMD510BRunSta[1] = %d adcPower[%d] = %d motorRunAngle[%d] = %d\r\n",mCount.motorCMD510BRunSta[1],j, mMotorAdc[j].CurrentVal,j,motorRunAngle[j]);
+                        // printf("+++++++++++++++++++++++mCount.motorCMD510BRunSta[1] = %d adcPower[%d] = %d motorRunAngle[%d] = %d\r\n",mCount.motorCMD510BRunSta[1],j, mMotorAdc[j].CurrentVal,j,motorRunAngle[j]);
                     }
                 }
             }
+            else{
+                mMotorMaxCurrentTime[j] = 0;
+            }
         }
+        // printf("---------mMotorAdc.CurrentVal = %d,%d_%d %d--------------\r\n", mMotorAdc[0].CurrentVal, mMotorAdc[1].CurrentVal, mMotorMaxCurrentTime[0],mMotorMaxCurrentTime[1]);
         // printf("---------mMotorAdc.CurrentVal = %d,%d,%d %d--------------\r\n", mMotorAdc[0].CurrentVal, mMotorAdc[1].CurrentVal, mMotorAdc[2].CurrentVal,mNtc10KAdc.CurrentVal);
         // printf("---------mMotorAdc.CurrentVal = %d,%d,%d --------------\r\n", adcPower[0] / ADC_DIVISION_VAL, adcPower[1] / ADC_DIVISION_VAL, adcPower[2] / ADC_DIVISION_VAL);
 #if (DOOR_CUR_VAL_MODE == CURRENT_MODE)
-        if(mMotorAdc[1].CurrentVal > 10)
+        if(mMotorAdc[1].CurrentVal > 10)        //空载时（不接电机），计算出的电流采样值为3mA，接迪洛克电机（电机推杆无负载）电流值：300~550mA。启动瞬间：2000mA。避免个体差异取消10mA一下的杂波值。
             mMachineModbusSta.outWindowsCurVal = mMotorAdc[1].CurrentVal;
         else
             mMachineModbusSta.outWindowsCurVal = 0;
