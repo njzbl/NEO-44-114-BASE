@@ -47,6 +47,7 @@ extern "C" {
 #define DLK_YLSZ23_FB                   4       //迪洛克防爆款FB推杆电机,只反馈关紧百叶（电机完全伸出）的电平信号，内部没有堵转电流保护，F/R推拉信号至少保持600ms才视为有效信号。
 #define WG_TG                           5       //微光推杆电机，内部没有堵转电流保护
 #define G_ROCH_D3Ex                     6       //基洛克防爆推杆电机 ，内部有堵转电流保护
+#define DLK_TG_60W_180DW                7       //迪洛克推杆电机，内部没有堵转电流保护（排风） + 180160DW进风，通道0是进风(P5)，通道1是排风(P6)
 
 #define NEO_400350_DW_BASE              0
 #define NEO_320270_MAX_BASE             1       //迪洛克推杆 + DC风扇 + NO
@@ -61,8 +62,9 @@ extern "C" {
 #define NEO_320270_MAX_BASE_OM         10       //迪洛克推杆 + DC风扇 + NO + 单排风
 #define NEO_400350_WG_TG_ACFAN_BASE    11       //微光推杆电机 + AC风扇 + NO
 #define NEO_400350_DLK_FB_NO           12       //迪洛克防爆推杆 + AC风扇 + NO
+#define NEO_400350_DLK_TG_DW_DCFAN_NC  13       //迪洛克推杆(排风) + 180160DW(进风)+ DC风扇(DC供电，无延时) + NC，通道0是进风(P5)，通道1是排风(P6)
 
-#define MACHINE_TYPE_CUSTOMER           NEO_400350_DLK_TG_DCFAN_NC
+#define MACHINE_TYPE_CUSTOMER           NEO_400350_DLK_TG_DW_DCFAN_NC
 
 #define MODBUS_REG_HOLDING_START_1      1
 #define MODBUS_REG_HOLDING_START_21     21
@@ -238,6 +240,19 @@ extern "C" {
 
 #endif
 
+#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_DW_DCFAN_NC)
+#define MOTOR_MODEL                         DLK_TG_60W_180DW
+#define MODBUS_COMMUNICATION_ADDRESS_TYPE   MODBUS_REG_HOLDING_START_1
+#define MACHINE_FEEDBACK_MODE               NORMALLY_CLOSE          //系统反馈的类型
+#define MODBUS_CTRL                         PARAM_DISABLED   //0: no modbus   1: enabled modbus
+#define STOP_FAN_CUR_CHECK                  0   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
+#define FG_CUR_TYPE                         1   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
+#define FAN_MODEL                           FAN_MODEL_DC_100W
+#define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+#define INLET_MOTOR_FLAG                    VALID
+
+#endif
+
 
 
 #if (MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_YLSZ23_FB)
@@ -245,7 +260,7 @@ extern "C" {
 #define DC_CURRENT_MIN		            150		//30W 电机：没有负载,不接电机时电流 12mA。有电机接百叶时电流基本都大于160mA ，堵转时电流1.6A~2.0A。
 
 #endif
-#if (MOTOR_MODEL == DLK_TG_60W || MOTOR_MODEL == G_ROCH_D3Ex || MOTOR_MODEL == TZC36_5840_3650 || MOTOR_MODEL == WG_TG)
+#if (MOTOR_MODEL == DLK_TG_60W || MOTOR_MODEL == DLK_TG_60W_180DW || MOTOR_MODEL == G_ROCH_D3Ex || MOTOR_MODEL == TZC36_5840_3650 || MOTOR_MODEL == WG_TG)
 #define MAX_CURRENT_MOTOR               2625        //5A     这里的阈值5000为暂定值，需要测试 //#define MAX_CURRENT_MOTOR               5000        //9A     这里的阈值5000为暂定值，需要测试
 
 #define DC_CURRENT_MIN		            150		//30W 电机：没有负载,不接电机时电流 12mA。有电机接百叶时电流基本都大于160mA ，堵转时电流1.6A~2.0A。

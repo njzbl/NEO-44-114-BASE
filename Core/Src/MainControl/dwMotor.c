@@ -52,9 +52,19 @@ const uint32_t FG_THRESHOLD[THRESHOLD_LEN] = {1000,800,800,700,500,400,350,250,1
 									,125,125,125,125,125,125,125,125,125,125};           //220
 #endif
 
+#if (MOTOR_MODEL == DLK_TG_60W_180DW)
+// 参数从180160DW移植而来，具体来源参看相关文件
+const uint32_t FG_THRESHOLD[THRESHOLD_LEN] = {2000,1600,1600,1600,1000,800,700,500,200,200
+                                   ,200,200,200,200,200,200,200,200,200,200};
+#endif
+
 void dwMotorCtrl(uint8_t motorCh)
 {
-#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == DLK_YLSZ23)
+#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_TG_60W_180DW)
+    if(MOTOR_MODEL == DLK_TG_60W_180DW) {
+        if(motorCh !=  0)       //只有进风是DW电机
+            return;
+    }
     if(mMachineSta.activation == RUN_STA) {
         mAddFgVal = 0;   //50    //(采用PWM方式供电) 数组 ： 350 ， mAddFgVal = 150 ，电机运行约 300 次，出现1台进风电机打齿。
         
@@ -77,7 +87,7 @@ void dwMotorCtrl(uint8_t motorCh)
         || (mOSTM16_SysTick20us_CMD510B_M[motorCh] >= (FG_THRESHOLD[mCount.motorCMD510BRunSta[motorCh]] + mAddFgVal) && (mCount.motorCMD510BRunSta[motorCh] < THRESHOLD_LEN_DEC_1 && ((mCount.motorCMD510BRunSta[motorCh] > 0)))) 
         || (mCount.motorCMD510BRunSta[motorCh] == 0 && mOSTM16_SysTick20us_CMD510B_M[motorCh] > 1300)) {	//10ms  If the pulse is not received for a long time, it means that the motor is stuck.
             if(mDebugFlagPowerDownCMD510B[motorCh][0] == 0) {
-#if (MOTOR_MODEL == CHENXIN_5840_3650)
+#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == DLK_TG_60W_180DW)
                 setBDCMotorStop(motorCh);	//堵转的时候，可能也有脉冲。要测试  //   ZBL  20250418
 #endif
                 mDebugFlagPowerDownCMD510B[motorCh][0] = 1;

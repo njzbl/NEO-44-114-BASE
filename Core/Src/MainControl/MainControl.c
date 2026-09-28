@@ -94,11 +94,17 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 #if(FAN_MODEL == FAN_MODEL_DC_100W)
 	if(GPIO_Pin == FAN_FG_Pin) {
 		mCount.fanRunSta++;
+		return ;		// 风扇处理已完成，本行以后都是处理电机的流程。
 	}
 #endif
 
-#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == TZC36_5840_3650 || MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_YLSZ23_FB)
+#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == DLK_TG_60W_180DW || MOTOR_MODEL == TZC36_5840_3650 || MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_YLSZ23_FB)
 	
+#if (MOTOR_MODEL == DLK_TG_60W_180DW)  // 只有进风是DW电机。
+	if(GPIO_Pin != ON_STATE1_Pin) {
+		return;
+	}
+#endif
 	
   	if(GPIO_Pin == ON_STATE1_Pin) {
 		mDoorSta.motorCh = MOTOR1_LOGIC_CHN;
@@ -118,7 +124,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 	if(mCMD510BPowerFlag[mDoorSta.motorCh] == 1) {       //增加了下拉电阻，这条限制语句就可以不用增加了，如果没有下拉电阻，那么在电机掉电后因为内部电容的存在，FG信号会缓慢的从高电平掉落到低电平，就是触发成千上万个FG脉冲信号。增加了下拉电阻可以非常有效的解决这个问题。
 		return ;
 	}
-#if (MOTOR_MODEL == CHENXIN_5840_3650)
+#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == DLK_TG_60W_180DW)
 	mMotorMaxCurrentTime[mDoorSta.motorCh] = 0;		//大电流时FG信号最大持续时间
 #endif
 
@@ -139,7 +145,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 		if(mDoorSta.nowDoorPositionCMD510BM[mDoorSta.motorCh] >= FARTHEST_POSITION_DC_B_MOTOR) {
 
 			if(mDebugFlagPowerDownCMD510B[mDoorSta.motorCh][1] == 0) {
-#if (MOTOR_MODEL == CHENXIN_5840_3650)
+#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == DLK_TG_60W_180DW)
 				setBDCMotorStop(mDoorSta.motorCh);      //   ZBL  20250418
 				//  printf("PowerDownShadesMotorAAA()\r\n");
 #endif
@@ -502,7 +508,7 @@ int MainControl(void)
 
 
 	uint32_t delay_total_1 = DELAY_6S,delay_total_2 = DELAY_7S;
-#if(MOTOR_MODEL == DLK_TG_60W)          //25°C 电机推出时完全堵转，mMotorAdc[j].CurrentVal 瞬间最大值3275，然后逐渐降低最后一直稳定在2800左右，此时稳压电源读数为：2.6 ~ 2.8A ，在低温-30°C时小裴测试稳压电源读数2.9A
+#if(MOTOR_MODEL == DLK_TG_60W || MOTOR_MODEL == DLK_TG_60W_180DW)          //25°C 电机推出时完全堵转，mMotorAdc[j].CurrentVal 瞬间最大值3275，然后逐渐降低最后一直稳定在2800左右，此时稳压电源读数为：2.6 ~ 2.8A ，在低温-30°C时小裴测试稳压电源读数2.9A
 	if(mNtc10KAdc.CurrentVal > -10) {
 		delay_total_1 = DELAY_6S;
 		delay_total_2 = DELAY_7S;
@@ -621,6 +627,9 @@ int MainControl(void)
 #endif
 #if (FG_CUR_TYPE == 1)  //0:直流有刷电机用FG信号判定电机工作转态；  1:直流有刷电机用电流信号判定电机工作转态；
 
+#if (MOTOR_MODEL == DLK_TG_60W_180DW)
+			mDoorSta.motorCurNum[0] = mCount.motorCMD510BRunSta[0];	//进风是P5，通道0
+#endif
 			uint8_t motorAllSta = 0;
 			for(i = 0; i < MOTOR_BDC_NUMBER_MAX; i++) {
 				if(mMotorBDC.motorBDCValid[i] == VALID) {
@@ -975,6 +984,19 @@ void OpenExShades(void)
 			}
 		}
 #endif
+#if (MOTOR_MODEL == DLK_TG_60W_180DW)
+        setBLDCMotor(MOTOR1_LOGIC_CHN, 1);  	//1:正常逻辑	//
+		setBDCMotorForward(MOTOR1_LOGIC_CHN);
+		for(int i = 0; i < MOTOR_BDC_NUMBER_MAX;i++) {
+			mCount.motorCMD510BRunSta[i] = 0;
+        	mOSTM16_SysTick20us_CMD510B_M[i] = 0;
+			for(int j = 0; j < 5;j++) {
+            	mDebugFlagPowerDownCMD510B[i][j] = 0;
+			}
+		}
+		setBDCMotorForward(MOTOR2_LOGIC_CHN);
+#endif
+
 		mMachineSta.motorPowerSta[MOTOR1_LOGIC_CHN] = MOTOR_POWER_UP_STA;
 		mMachineSta.motorPowerSta[MOTOR2_LOGIC_CHN] = MOTOR_POWER_UP_STA;
 		mMachineSta.hBridgeSta = H_BRIDGE_STATE_OPEN_H;
@@ -1009,6 +1031,18 @@ void CloseExShades(void)
 			}
 		}
 #endif
+#if (MOTOR_MODEL == DLK_TG_60W_180DW)
+        setBLDCMotor(MOTOR1_LOGIC_CHN, 0);  	//0:正常逻辑	//
+		setBDCMotorForward(MOTOR1_LOGIC_CHN);
+		for(int i = 0; i < MOTOR_BDC_NUMBER_MAX;i++) {
+			mCount.motorCMD510BRunSta[i] = 0;
+        	mOSTM16_SysTick20us_CMD510B_M[i] = 0;
+			for(int j = 0; j < 5;j++) {
+            	mDebugFlagPowerDownCMD510B[i][j] = 0;
+			}
+		}
+		setBDCMotorBack(MOTOR2_LOGIC_CHN);
+#endif
 		mMachineSta.motorPowerSta[MOTOR1_LOGIC_CHN] = MOTOR_POWER_UP_STA;
 		mMachineSta.motorPowerSta[MOTOR2_LOGIC_CHN] = MOTOR_POWER_UP_STA;
 		mMachineSta.hBridgeSta = H_BRIDGE_STATE_OPEN_H;
@@ -1019,7 +1053,7 @@ void StopExShades(void)
 {
 	setBDCMotorStop(MOTOR1_LOGIC_CHN);
 	setBDCMotorStop(MOTOR2_LOGIC_CHN);
-#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_YLSZ23_FB)
+#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == DLK_TG_60W_180DW  || MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_YLSZ23_FB)
         setBLDCMotor(MOTOR1_LOGIC_CHN, 0);
         setBLDCMotor(MOTOR2_LOGIC_CHN, 0);
 #endif
@@ -1033,7 +1067,7 @@ void StopExShades(void)
 //sta : 0：motor reverse Rotation    1: motor forward rotate
 void setBLDCMotor(uint8_t chn, uint8_t sta)
 {
-#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_YLSZ23_FB)
+#if (MOTOR_MODEL == CHENXIN_5840_3650 || MOTOR_MODEL == DLK_TG_60W_180DW || MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_YLSZ23_FB)
     setDirPwm(chn, sta);
 #endif
 }

@@ -124,6 +124,10 @@ void PrintfVersion(void)
 #if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_DCFAN_NC)
     printf("Software Version: NEO_400350_DLK_TG_DCFAN_NC-V103-20260312\r\n");
 #endif
+#if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_DW_DCFAN_NC)
+    printf("Software Version: NEO_400350_DLK_TG_DW_DCFAN_NC-V103-20260928\r\n");
+#endif
+
 }
 
 __IO   uint16_t   aADCxConvertedData[ADC_CONVERTED_DATA_BUFFER_SIZE];
@@ -182,9 +186,11 @@ int main(void)
   setLED0(0);
 #if (MACHINE_FEEDBACK_MODE == NORMALLY_CLOSE)  //华为和阳光电源，采用软件强拉常闭触点，更为科学�??
   setSysErr(OUT_STATUS_CLOSE);
+  setSysSta(OUT_STATUS_CLOSE);
 #endif
 #if (MACHINE_FEEDBACK_MODE == NORMALLY_OPEN)  //常开触点机型
   setSysErr(OUT_STATUS_OPEN);
+  setSysSta(OUT_STATUS_OPEN);
 #endif
   InitModbus();
     

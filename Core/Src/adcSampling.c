@@ -345,7 +345,7 @@ void adcSampling(void)
             motorMaxCurHoldTimeMsThreshold = 500;
 #endif
 
-#if(MOTOR_MODEL == DLK_TG_60W)          //25°C 电机推出时完全堵转，mMotorAdc[j].CurrentVal 瞬间最大值3275，然后逐渐降低最后一直稳定在2800左右，此时稳压电源读数为：2.6 ~ 2.8A ，在低温-30°C时小裴测试稳压电源读数2.9A。 -40°C时 串口监测到mMotorAdc[j].CurrentVal 长时间达到：4000+
+#if(MOTOR_MODEL == DLK_TG_60W || MOTOR_MODEL == DLK_TG_60W_180DW)          //25°C 电机推出时完全堵转，mMotorAdc[j].CurrentVal 瞬间最大值3275，然后逐渐降低最后一直稳定在2800左右，此时稳压电源读数为：2.6 ~ 2.8A ，在低温-30°C时小裴测试稳压电源读数2.9A。 -40°C时 串口监测到mMotorAdc[j].CurrentVal 长时间达到：4000+
             if(mNtc10KAdc.CurrentVal > -10) {
                 maxCurThreshold[j] = 2000; //maxCurThreshold[j] = 2800;  //迪洛克常规款电机堵转时电流为2400 ~ 2850 左右，考虑个体差异性，取偏小值 2.4A ，持续500ms
             }
@@ -470,7 +470,7 @@ void adcSampling(void)
                 else if(j == 1) {
                     if(motorRunAngle[j] > 10 && mMotorMaxCurrentTime[1] > motorMaxCurHoldTimeMsThreshold) {  //压紧胶条时间长度大于500ms
 		                mMachineSta.motorPowerSta[MOTOR2_LOGIC_CHN] = MOTOR_POWER_DOWN_STA;
-#if(MOTOR_MODEL == WG_TG || MOTOR_MODEL == DLK_TG_60W)
+#if(MOTOR_MODEL == WG_TG || MOTOR_MODEL == DLK_TG_60W || MOTOR_MODEL == DLK_TG_60W_180DW)
                         HAL_GPIO_WritePin(MOTOR_PWR_CTRL2_GPIO_Port, MOTOR_PWR_CTRL2_Pin, GPIO_PIN_RESET);
 #endif
                         // printf("+++++++++++++++++++++++mCount.motorCMD510BRunSta[1] = %d adcPower[%d] = %d motorRunAngle[%d] = %d\r\n",mCount.motorCMD510BRunSta[1],j, mMotorAdc[j].CurrentVal,j,motorRunAngle[j]);
