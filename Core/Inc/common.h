@@ -63,6 +63,7 @@ extern "C" {
 #define NEO_400350_WG_TG_ACFAN_BASE    11       //微光推杆电机 + AC风扇 + NO
 #define NEO_400350_DLK_FB_NO           12       //迪洛克防爆推杆 + AC风扇 + NO
 #define NEO_400350_DLK_TG_DW_DCFAN_NC  13       //迪洛克推杆(排风) + 180160DW(进风)+ DC风扇(DC供电，无延时) + NC，通道0是进风(P5)，通道1是排风(P6)
+#define NEO_400350_DW_DCFAN_NC         14       //辰鑫 + DC风扇 +  NC
 
 #define MACHINE_TYPE_CUSTOMER           NEO_400350_DLK_TG_DW_DCFAN_NC
 
@@ -88,6 +89,19 @@ extern "C" {
 #define MOTOR_MODEL                         CHENXIN_5840_3650
 #define MODBUS_COMMUNICATION_ADDRESS_TYPE   MODBUS_REG_HOLDING_START_21
 #define MACHINE_FEEDBACK_MODE               NORMALLY_OPEN          //系统反馈的类型
+#define MODBUS_CTRL                         PARAM_DISABLED   //0: no modbus   1: enabled modbus
+#define STOP_FAN_CUR_CHECK                  0   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
+#define FG_CUR_TYPE                         0   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
+#define FAN_MODEL                           FAN_MODEL_DC_100W
+#define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+#define INLET_MOTOR_FLAG                    VALID
+
+#endif
+
+#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DW_DCFAN_NC)
+#define MOTOR_MODEL                         CHENXIN_5840_3650
+#define MODBUS_COMMUNICATION_ADDRESS_TYPE   MODBUS_REG_HOLDING_START_21
+#define MACHINE_FEEDBACK_MODE               NORMALLY_CLOSE          //系统反馈的类型
 #define MODBUS_CTRL                         PARAM_DISABLED   //0: no modbus   1: enabled modbus
 #define STOP_FAN_CUR_CHECK                  0   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
 #define FG_CUR_TYPE                         0   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
@@ -306,7 +320,13 @@ extern "C" {
 
 // #define FARTHEST_POSITION_DC_B_MOTOR    4000//2900 (实际测试发现同一个百叶，一个完整行程远远大于2600，也比2900大)    //2600(max) * 1.115  	//45 ° , pluse is 2600. 2600 * 1.115 = 2900
 // #define FARTHEST_POSITION_DC_B_MOTOR    3500//2900 (实际测试发现同一个百叶，一个完整行程远远大于2600，也比2900大)    //2600(max) * 1.115  	//45 ° , pluse is 2600. 2600 * 1.115 = 2900
-#define FARTHEST_POSITION_DC_B_MOTOR    800 //800 辰鑫400350DW电机正式程序的参数800        //辰鑫400350DW电机 ,700 是低温实验的程序
+#if (MOTOR_MODEL == DLK_TG_60W_180DW)
+#define FARTHEST_POSITION_DC_B_MOTOR        1700  //180160-DW 是1700
+
+#else
+#define FARTHEST_POSITION_DC_B_MOTOR        800 //800 辰鑫400350DW电机正式程序的参数800,目前只调试了辰鑫400350DW和180160DW的电机
+
+#endif
                                                         //                                                                ;  8（进）,8（排）    ;  9, 10     ； 7, 16    ；4, 11 ;    30, 34（摇晃）;   15, 3 ;   19, 15  ;  12, -149 （摇晃）; 16, 0 ; 
                                                         //第2、3、4、8台，百叶开启到最大+70step，
 //>>>>>>>>>>>>>>>>>>>>>>>>>>>>新版电机（增加运放，没有取消120Ω电阻）+新版结构（2个螺丝固定+减小压铸件间隙）  //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
