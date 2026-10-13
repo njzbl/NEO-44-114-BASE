@@ -179,7 +179,15 @@ int main(void)
   MX_IWDG_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
+  #ifdef PWM_DCFAN_VALUE
+
+  if (HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3) != HAL_OK)//启动定时器通道1，PWM输出
+  {
+    /* PWM generation Error */
+    while(1);
+  }
   
+#endif
 
   // AHT20_IIC_GPIO_INIT();
   PrintfVersion();
