@@ -985,7 +985,7 @@ void OpenExShades(void)
 		}
 #endif
 #if (MOTOR_MODEL == DLK_TG_60W_180DW)
-        setBLDCMotor(MOTOR1_LOGIC_CHN, 1);  	//1:正常逻辑	//
+        setBLDCMotor(MOTOR1_LOGIC_CHN, 0);  	//180160DW 和 400350DW 旋转方向不同
 		setBDCMotorForward(MOTOR1_LOGIC_CHN);
 		for(int i = 0; i < MOTOR_BDC_NUMBER_MAX;i++) {
 			mCount.motorCMD510BRunSta[i] = 0;
@@ -1032,7 +1032,7 @@ void CloseExShades(void)
 		}
 #endif
 #if (MOTOR_MODEL == DLK_TG_60W_180DW)
-        setBLDCMotor(MOTOR1_LOGIC_CHN, 0);  	//0:正常逻辑	//
+        setBLDCMotor(MOTOR1_LOGIC_CHN, 1);  	//180160DW 和 400350DW 旋转方向不同
 		setBDCMotorForward(MOTOR1_LOGIC_CHN);
 		for(int i = 0; i < MOTOR_BDC_NUMBER_MAX;i++) {
 			mCount.motorCMD510BRunSta[i] = 0;
