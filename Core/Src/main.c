@@ -177,10 +177,11 @@ int main(void)
   MX_TIM16_Init();
   MX_USART1_UART_Init();
   MX_IWDG_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
   
 
-  AHT20_IIC_GPIO_INIT();
+  // AHT20_IIC_GPIO_INIT();
   PrintfVersion();
   InitVar();
   setLED0(0);

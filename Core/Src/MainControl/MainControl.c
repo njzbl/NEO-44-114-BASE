@@ -55,6 +55,11 @@ extern uint16_t mMotorCurNow[1000];
 #endif
 uint16_t mMotorCurCount = 0;
 uint16_t mMotorCurCountFlag = 0;
+
+#ifdef PWM_DCFAN_VALUE
+uint16_t mPwm = 100,mPwmPre;
+#endif
+
 /*****************************************************************************************************************************
  * Macro Definition
  ****************************************************************************************************************************/
@@ -361,6 +366,13 @@ int MainControl(void)
 
     UpdataModbusAddr();
 	mInputSta.startQG = getChkSta();
+
+#ifdef PWM_DCFAN_VALUE
+	if(mPwm != mPwmPre) {
+		mPwmPre = mPwm;
+		Set_PWM_DutyCycle(100 - mPwm);
+	}
+#endif
 #if (LOOP_TEST == 1)
 	if(mCount.loopTestCount <= 650) {	//if(mCount.loopTestCount <= 3000) {
 		mInputSta.startQG = GPIO_PIN_SET;
@@ -1085,6 +1097,9 @@ void StartFan(void)
 	setDCFanCtrl(1);
     setFanPWM(0);
 #endif
+#ifdef PWM_DCFAN_VALUE
+	mPwm = 80;
+#endif
 }
 
 void StopFan(void)
@@ -1094,6 +1109,9 @@ void StopFan(void)
 #endif
 #if (FAN_MODEL == FAN_MODEL_DC_100W)
 	setDCFanCtrl(0);
+#endif
+#ifdef PWM_DCFAN_VALUE
+	mPwm = 0;
 #endif
 }
 

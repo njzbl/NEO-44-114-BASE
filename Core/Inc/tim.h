@@ -32,6 +32,8 @@ extern "C" {
 
 /* USER CODE END Includes */
 
+extern TIM_HandleTypeDef htim1;
+
 extern TIM_HandleTypeDef htim14;
 
 extern TIM_HandleTypeDef htim16;
@@ -40,11 +42,14 @@ extern TIM_HandleTypeDef htim16;
 
 /* USER CODE END Private defines */
 
+void MX_TIM1_Init(void);
 void MX_TIM14_Init(void);
 void MX_TIM16_Init(void);
 
-/* USER CODE BEGIN Prototypes */
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
+/* USER CODE BEGIN Prototypes */
+void Set_PWM_DutyCycle(uint8_t duty);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

@@ -62,8 +62,7 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOF, SYS_STA_Pin|STS_ERR_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, MOTOR_PWR_CTRL1_Pin|HEATER_CTRL_Pin|I2C_SCL_Pin|I2C_SDA_Pin
-                          |DIR1_Pin|PWM1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, MOTOR_PWR_CTRL1_Pin|HEATER_CTRL_Pin|DIR1_Pin|PWM1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, AC_FAN_CTRL_Pin|MOTOR_PWR_CTRL2_Pin|BACK1_Pin|FRONT1_Pin
@@ -92,10 +91,8 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PAPin PAPin PAPin PAPin
-                           PAPin PAPin */
-  GPIO_InitStruct.Pin = MOTOR_PWR_CTRL1_Pin|HEATER_CTRL_Pin|I2C_SCL_Pin|I2C_SDA_Pin
-                          |DIR1_Pin|PWM1_Pin;
+  /*Configure GPIO pins : PAPin PAPin PAPin PAPin */
+  GPIO_InitStruct.Pin = MOTOR_PWR_CTRL1_Pin|HEATER_CTRL_Pin|DIR1_Pin|PWM1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

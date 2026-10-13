@@ -64,8 +64,9 @@ extern "C" {
 #define NEO_400350_DLK_FB_NO           12       //迪洛克防爆推杆 + AC风扇 + NO
 #define NEO_400350_DLK_TG_DW_DCFAN_NC  13       //迪洛克推杆(排风) + 180160DW(进风)+ DC风扇(DC供电，无延时) + NC，通道0是进风(P5)，通道1是排风(P6)
 #define NEO_400350_DW_DCFAN_NC         14       //辰鑫 + DC风扇 +  NC
+#define NEO_400350_DLK_TG_DCFAN_80_NC  15       //迪洛克推杆 + DC风扇 (PWM 80% 固定占空比) + NC
 
-#define MACHINE_TYPE_CUSTOMER           NEO_400350_DLK_TG_DW_DCFAN_NC
+#define MACHINE_TYPE_CUSTOMER           NEO_400350_DLK_TG_DCFAN_80_NC
 
 #define MODBUS_REG_HOLDING_START_1      1
 #define MODBUS_REG_HOLDING_START_21     21
@@ -212,6 +213,20 @@ extern "C" {
 #define FAN_MODEL                           FAN_MODEL_DC_100W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
 #define INLET_MOTOR_FLAG                    VALID
+
+#endif
+
+#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_DCFAN_80_NC)
+#define MOTOR_MODEL                         DLK_TG_60W
+#define MODBUS_COMMUNICATION_ADDRESS_TYPE   MODBUS_REG_HOLDING_START_1
+#define MACHINE_FEEDBACK_MODE               NORMALLY_CLOSE          //系统反馈的类型
+#define MODBUS_CTRL                         PARAM_DISABLED   //0: no modbus   1: enabled modbus
+#define STOP_FAN_CUR_CHECK                  0   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
+#define FG_CUR_TYPE                         1   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
+#define FAN_MODEL                           FAN_MODEL_DC_100W
+#define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+#define INLET_MOTOR_FLAG                    VALID
+#define PWM_DCFAN_VALUE                     80        //直流风扇的PWM占空比
 
 #endif
 
