@@ -311,6 +311,7 @@ void adcSampling(void)
 
             mMotorAdc[j].ThresholdMin = 120; //150mA(30W 电机空载的时候基本都大于150mA ， 启动电流会达到1680mA ) ,电机停止时电流 为12mA左右。所以阈值定位150mA
                                              //     (60W 电机空载的时候基本都大于300mA ， 启动电流会达到1960mA )
+                                             //     (180160DW电机空载时基本90mA~100mA ,  启动电流会达到 850mA ,  堵转电流会达到 500mA (堵转FG参数200ms和240ms,对应堵转电流 500mA ,  堵转FG参数300ms,对应堵转电流 710mA))
 
                                              
             // mMotorAdc[j].ThresholdMin = 50; //50mA
@@ -375,8 +376,8 @@ void adcSampling(void)
                 motorMaxCurHoldTimeMsThreshold = 20;
                 maxCurThreshold[j] = 1900; //maxCurThreshold = 1600;       //1600 常温可能可以，但是低温可能不够(常温和低温阈值参数可以分开)，会导致-30°C提前停止。实测-30°C整机实验，第一次开启百叶正常，再关闭百叶在45°时提前停止。可能是这里的问题。而且多台主板测试发现电流采样值差异挺大的，基本无法精确保护，只能放大这里的值，用于宽范围保护。
             }
-            if(j == 0) {
-                motorRunAngle[0] = mCount.motorCMD510BRunSta[0];
+            if(j == 1) {
+                motorRunAngle[1] = mCount.motorCMD510BRunSta[1];
 // #if(MACHINE_DEBUG == DEBUG_ENABLED)
 //                 if(motorRunAngle[0] < 990) {
 //                     if(mMotorCurNow[motorRunAngle[0]] < mMotorAdc[j].CurrentVal)
@@ -397,8 +398,8 @@ void adcSampling(void)
 //                 }
 // #endif
             }
-            else if(j == 1) {
-                motorRunAngle[1] = mCount.motorCMD510BRunSta[1];
+            else if(j == 0) {
+                motorRunAngle[0] = mCount.motorCMD510BRunSta[0];
 #if(MACHINE_DEBUG == DEBUG_ENABLED)
                 // if(motorRunAngle[1] < 30) {
                 //     if(mMotorCurMaxNow[0][motorRunAngle[1]] < mMotorAdc[j].CurrentVal)
@@ -413,17 +414,17 @@ void adcSampling(void)
                 //     if(mMotorCurMaxTotal[j][countTemp] < mMotorAdc[j].CurrentVal)
                 //         mMotorCurMaxTotal[j][countTemp] = mMotorAdc[j].CurrentVal;
                 // }
-                if(motorRunAngle[1] < 990) {
-                    if(mMotorCurNow[motorRunAngle[1]] < mMotorAdc[j].CurrentVal)
-                        mMotorCurNow[motorRunAngle[1]] = mMotorAdc[j].CurrentVal;
+                if(motorRunAngle[j] < 990) {
+                    if(mMotorCurNow[motorRunAngle[j]] < mMotorAdc[j].CurrentVal)
+                        mMotorCurNow[motorRunAngle[j]] = mMotorAdc[j].CurrentVal;
                 }
-                if((motorRunAngle[1] >= 800) && (motorRunAngle[1] < 840)) {
-                    if(mMotorCurMaxNow[0][motorRunAngle[1] - 800] < mMotorAdc[j].CurrentVal)
-                        mMotorCurMaxNow[0][motorRunAngle[1] - 800] = mMotorAdc[j].CurrentVal;
-                    if(mMotorCurMaxTotal[0][motorRunAngle[1] - 800] < mMotorAdc[j].CurrentVal)
-                        mMotorCurMaxTotal[0][motorRunAngle[1] - 800] = mMotorAdc[j].CurrentVal;
+                if((motorRunAngle[j] >= 800) && (motorRunAngle[j] < 840)) {
+                    if(mMotorCurMaxNow[0][motorRunAngle[j] - 800] < mMotorAdc[j].CurrentVal)
+                        mMotorCurMaxNow[0][motorRunAngle[j] - 800] = mMotorAdc[j].CurrentVal;
+                    if(mMotorCurMaxTotal[0][motorRunAngle[j] - 800] < mMotorAdc[j].CurrentVal)
+                        mMotorCurMaxTotal[0][motorRunAngle[j] - 800] = mMotorAdc[j].CurrentVal;
                 }
-                countTemp = mCount.motorCMD510BRunSta[1] / 30;
+                countTemp = mCount.motorCMD510BRunSta[j] / 30;
                 if(countTemp < 40) {
                     if(mMotorCurMaxNow[j][countTemp] < mMotorAdc[j].CurrentVal)
                         mMotorCurMaxNow[j][countTemp] = mMotorAdc[j].CurrentVal;
