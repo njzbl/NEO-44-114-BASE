@@ -60,6 +60,8 @@ uint16_t mMotorCurCountFlag = 0;
 uint16_t mPwm = 100,mPwmPre;
 #endif
 
+GPIO_PinState mKeyModbusNewCmd,mKeyModbusNewCmdPre;
+GPIO_PinState mKeyXFPSCmd,mKeyXFPSCmdPre;
 /*****************************************************************************************************************************
  * Macro Definition
  ****************************************************************************************************************************/
@@ -224,6 +226,11 @@ void InitVar(void)
 		mMotorCurNow[i] = 0;
 	}
 #endif
+
+	mKeyModbusNewCmd = 0xff;
+	mKeyModbusNewCmdPre = 0xff;
+	mKeyXFPSCmd = 0xff;
+	mKeyXFPSCmdPre = 0xff;
 }
 
 void InitNewKeyVar(uint8_t keySta)
@@ -320,8 +327,9 @@ void InitNewKeyVar(uint8_t keySta)
     mMotorCurCount = 0;
     mMotorCurCountFlag = 0;
 	mDoorRunNumSta++;
-	if(mDoorRunNumSta >= 3)
-		mDoorRunNumSta = 3;
+	if(mDoorRunNumSta >= 4)		//原来是 3 ，因为循环之前调用一次InitNewKeyVar()，所以要改为 4
+		mDoorRunNumSta = 4;
+	mDoorSta.msSignDelay = 0;	//延时关闭百叶和风扇的延时计数器
 }
 
 /*****************************************************************************************************************************
@@ -334,38 +342,51 @@ int MainControl(void)
 	// int8_t pluseSta1 = 0;
 	// int8_t pluseSta2 = 0;
 	uint32_t delayKey = 0;
-	if(mOSTM16_SysTick20us_K >= MAINCONTROL_20US_TO_10MS) {	// 10ms
-		mCount.delay10ms++;
-		mOSTM16_SysTick20us_K = 0;
-		mCount.fan++;
-		mCount.motor++;
-		if (mCount.initBackDoor < 600000) {  //600s
-			mCount.initBackDoor++;
-		}
-		mCount.loopTestCount++;
-		// mMotorBDC.Doneflag = 0;  //允许下个周期开始检测电机电流		本硬件版本没有采用INA219采集电流
-	}
-	else {
+// 	if(mOSTM16_SysTick20us_K >= MAINCONTROL_20US_TO_10MS) {	// 10ms
+// 		mCount.delay10ms++;
+// 		mOSTM16_SysTick20us_K = 0;
+// 		mCount.fan++;
+// 		mCount.motor++;
+// 		if (mCount.initBackDoor < 600000) {  //600s
+// 			mCount.initBackDoor++;
+// 		}
+// 		mCount.loopTestCount++;
+// 		// mMotorBDC.Doneflag = 0;  //允许下个周期开始检测电机电流		本硬件版本没有采用INA219采集电流
+// 	}
+// 	else {
+// 		//每1ms检测一次推杆电机电流，并且只在开百叶和关百叶的过程中才检测电流。这里要测试I2C总线的速度是否能跟得上
+// 		if(mMachineSta.activation == RUN_STA) {
+// 			getBDCMotorCur();	//软件限流的参数和策略还没改好
+
+// // #if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_FB_NC_HW)
+// // 			getDoorSensorSta();
+// // #endif
+// 		}
+
+// 		return retn;
+// 	}
+
+	// if(mOSTM16_SysTick20us_K < MAINCONTROL_20US_TO_10MS >> 1) {
 		//每1ms检测一次推杆电机电流，并且只在开百叶和关百叶的过程中才检测电流。这里要测试I2C总线的速度是否能跟得上
 		if(mMachineSta.activation == RUN_STA) {
 			getBDCMotorCur();	//软件限流的参数和策略还没改好
-
-// #if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_FB_NC_HW)
-// 			getDoorSensorSta();
-// #endif
 		}
-
-		return retn;
-	}
+		// return retn;
+	// }
 
 	if(mMachineSta.hBridgeSta == H_BRIDGE_STATE_OFF) {	//这条语句必须要在InitNewKeyVar()函数之前，否则会造成H桥上下管同时导通的问题。
-		mDoorSta.msStopDelay++;
+		// mDoorSta.msStopDelay++;			//所有计数器都通过定时器完成。	
 		if(mDoorSta.msStopDelay >= 50)		//500ms
 			mMachineSta.hBridgeSta = H_BRIDGE_STATE_WAIT;
 	}
 
     UpdataModbusAddr();
 	mInputSta.startQG = getChkSta();
+
+#ifdef XFPS_SIGN
+	setPWM2(1);							//开启消防喷洒功能时，需要占用PWM2口，所以DW电机不能具备此功能。后续通过修改PCB实现不占用PWM2口。
+	mInputSta.chk = getDoorOpenSta2();	//消防喷洒信号为常闭触点，mInputSta.chk 变成高电平说明消防喷洒信号来了，要立刻关闭百叶。
+#endif
 
 #ifdef PWM_DCFAN_VALUE
 	if(mPwm != mPwmPre) {
@@ -385,11 +406,11 @@ int MainControl(void)
 	else
 		mCount.loopTestCount = 0;
 #endif
-	if(mDoorRunNumSta < 3) {
+	if(mDoorRunNumSta < 4) {
 		if(mCount.initBackDoor < DELAY_1S)	{	//前1秒开门，后6秒关门，为了避开关门初期接近开关不可靠接触，采用惯性关门。
 			mInputSta.startQG = GPIO_PIN_RESET;
 		}
-		else if(mCount.initBackDoor <= DELAY_7S) {  //第一次上电，就立刻关门。如果此时已经检测到关门信号，则不执行此关门动作。只置位mDoorRunNumSta = 1
+		else if(mCount.initBackDoor <= DELAY_9S) {  //第一次上电，就立刻关门。如果此时已经检测到关门信号，则不执行此关门动作。只置位mDoorRunNumSta = 1 		//禹成电机需要7秒才能完全关闭
 			mInputSta.startQG = GPIO_PIN_SET;
 		}
 	}
@@ -398,7 +419,7 @@ int MainControl(void)
 	delayKey = DELAY_150MS;
     if(mInputSta.startQG == GPIO_PIN_RESET) {   //闭合状态，为了开百叶 ，
         mCount.keyUpQG = 0;
-        mCount.keyDownQG++;
+        // mCount.keyDownQG++;  //计时统统交给定时器处理。
         if(mCount.keyDownQG > delayKey) {	 //600ms去抖
             mCount.keyDownQG = delayKey + 1;
             mActionVal = KEY_VAL_OPEN_WIN;
@@ -406,24 +427,40 @@ int MainControl(void)
     }
     else {   //断开状态，为了关百叶
         mCount.keyDownQG = 0;
-        mCount.keyUpQG++;
+        // mCount.keyUpQG++;  //计时统统交给定时器处理。
         if(mCount.keyUpQG > delayKey) {	 //600ms去抖
             mCount.keyUpQG = delayKey + 1;
             mActionVal = KEY_VAL_CLOSE_WIN;
         }
     }
+#ifdef XFPS_SIGN
+	if(mInputSta.chk == mKeyXFPSCmdPre) {   //闭合状态，为了开百叶 ，
+		if(mCount.chk > delayKey) {
+			mKeyXFPSCmd = mKeyXFPSCmdPre;
+		}
+	}
+	else{
+		mCount.chk = 0;
+		mKeyXFPSCmdPre = mInputSta.chk;
+	}
+#endif
 	// printf("mInputSta.startQG = %d\r\n",mInputSta.startQG);
 //<<<<<<<<<<<<<<<<  气感信号按键单独去抖计算，为了实现阳光电源变态的控制逻辑 <<<<<<<<<<<<<<<<<<<<
 
 
 #if (MODBUS_CTRL == PARAM_ENABLED)
 	if((mManualFlag == FALSE) && (mInputSta.startQG == GPIO_PIN_SET)) {     //气感信号优先级高于485信号。只有在气感信号手动按钮状态为关闭百叶时，485信号才有效。
-		if(getCtrlStaModbus() == ON_MODE_PARAMS)
+		if(getCtrlStaModbus() == ON_MODE_PARAMS) {
 			mInputSta.start485 = KEY_VAL_OPEN_WIN;
-		else if(getCtrlStaModbus() == OFF_MODE_PARAMS)
+			mKeyModbusNewCmd = KEY_VAL_OPEN_WIN;
+		}
+		else if(getCtrlStaModbus() == OFF_MODE_PARAMS) {
 			mInputSta.start485 = KEY_VAL_CLOSE_WIN;
-		else
+			mKeyModbusNewCmd = KEY_VAL_CLOSE_WIN;
+		}
+		else {
 			mInputSta.start485 = mInputSta.startQG;
+		}
 	}
     else {
         mInputSta.start485 = mInputSta.startQG;
@@ -440,8 +477,13 @@ int MainControl(void)
 
 
 
+#ifdef XFPS_SIGN
+	if(mKeyXFPSCmd == GPIO_PIN_SET) {		//高电平表示触发了消防喷洒信号,给关闭百叶和风扇的指令
+		mActionVal = KEY_VAL_CLOSE_WIN;
+	}
+#endif
 #if (MACHINE_POWER_LOSS_DETECT == PROTECTION_ENABLED)
-    if(mPowerAdcB.CurrentVal < mPowerAdcB.ThresholdMin && mCount.initBackDoor > DELAY_7S) {      //上电7秒以后  ,断电自动关闭百叶。
+    if(mPowerAdcB.CurrentVal < mPowerAdcB.ThresholdMin && mCount.initBackDoor > DELAY_9S) {      //上电9秒以后  ,断电自动关闭百叶。
         mActionVal = KEY_VAL_CLOSE_WIN;
     }
 #endif
@@ -450,16 +492,43 @@ int MainControl(void)
             mManualFlag = TRUE;
         if(mKeySta.nowKeySta != OPEN_DOOR) {
             InitNewKeyVar(OPEN_DOOR);
+			mDoorSta.msSignDelay = CLOSE_DELAY_TIME;
+			if(mKeyModbusNewCmd != mKeyModbusNewCmdPre) {
+				mKeyModbusNewCmdPre = mKeyModbusNewCmd;
+			}
             printf("mKeySta.isNewKeyCmd = TRUE  OPEN_DOOR  %d,%d \r\n",mKeyValQG, mInputKeyMix);
         }
     }
 	else if(mActionVal == KEY_VAL_CLOSE_WIN) {
         if(mKeySta.nowKeySta != CLOSE_DOOR) {
             InitNewKeyVar(CLOSE_DOOR);
-            printf("mKeySta.isNewKeyCmd = TRUE  CLOSE_DOOR  %d,%d \r\n",mKeyValQG, mInputKeyMix);
+			if(mKeyModbusNewCmd != mKeyModbusNewCmdPre) {
+				mKeyModbusNewCmdPre = mKeyModbusNewCmd;
+				mDoorSta.msSignDelay = CLOSE_DELAY_TIME;		//modbus 信号没有延时关闭功能。
+			}
+			if(mDoorRunNumSta < 4) {
+				mDoorSta.msSignDelay = CLOSE_DELAY_TIME;
+			}
+            // printf("mKeySta.isNewKeyCmd = TRUE  CLOSE_DOOR  %d,%d \r\n",mKeyValQG, mInputKeyMix);
+            printf("mKeySta.isNewKeyCmd = TRUE  CLOSE_DOOR  %d_%d,%d,%d \r\n",mKeyValQG, mKeyModbusNewCmd, mKeyModbusNewCmdPre, mDoorSta.msSignDelay);
         }
     }
 
+#ifdef XFPS_SIGN
+	if(mKeyXFPSCmd == GPIO_PIN_SET) {		//高电平表示触发了消防喷洒信号
+		mDoorSta.msSignDelay = CLOSE_DELAY_TIME;     //赋最大值，表示已经达到最大延时时间了。等于屏蔽了延时功能。
+	}
+#endif
+#ifndef CLOSE_DELAY_TIME
+	mDoorSta.msSignDelay = CLOSE_DELAY_TIME;     //赋最大值，表示已经达到最大延时时间了。等于屏蔽了延时功能。
+
+#else
+#if (MACHINE_POWER_LOSS_DETECT == PROTECTION_ENABLED)
+    if(mPowerAdcB.CurrentVal < mPowerAdcB.ThresholdMin && mCount.initBackDoor > DELAY_9S) {      //上电9秒以后  ,断电自动关闭百叶。
+        mDoorSta.msSignDelay = CLOSE_DELAY_TIME;     //赋最大值，表示已经达到最大延时时间了。等于屏蔽了延时功能。
+    }
+#endif
+#endif
 	//>>>>>>>>>>>>>>>>>>>>>>>>>>>>风机控制>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #if (MOTOR_MODEL == CHENXIN_5840_3650)
 	if(mKeySta.nextKeySta == OPEN_DOOR && mDoorRunNumSta >= 3) {	//闭合气感信号，要求开窗、开风机
@@ -470,15 +539,27 @@ int MainControl(void)
 		// mKeySta.nextKeySta = UNCERTAIN;
 	}
 #if (MOTOR_MODEL == CHENXIN_5840_3650)
-	else if(mKeySta.nextKeySta == CLOSE_DOOR && mDoorRunNumSta >= 3){
+	if(mKeySta.nextKeySta == CLOSE_DOOR && mDoorRunNumSta >= 3){
 #else
-	else if(mKeySta.nextKeySta == CLOSE_DOOR){
+	if(mKeySta.nextKeySta == CLOSE_DOOR && mDoorSta.msSignDelay >= CLOSE_DELAY_TIME){
 #endif
 		CloseExShades();
 		// mKeySta.nextKeySta = UNCERTAIN;	//华为版本通过mMachineSta.hBridgeSta变量控制只开一次。其实多次发出开命令也可以的。
 	}
+	
+#ifdef CLOSE_DELAY_TIME
+	if(mKeySta.nextKeySta == CLOSE_DOOR) {
+		if(mDoorSta.msSignDelay < CLOSE_DELAY_TIME) {
+			mCount.motor = 0;		//启动了关闭百叶的流程，所以从这里开始计时
+			mCount.fan = 0;			//启动了关闭风扇的流程，所以从这里开始计时，如果在StopFan(); 处，开始计时 mCount.fan 会出问题，后期要排查原因。
+		}
+	}
+#endif
+
 	if(mMachineSta.hBridgeSta == H_BRIDGE_STATE_OPEN_H) {	//华为版本通过mMachineSta.hBridgeSta变量控制
+		if((mKeySta.nextKeySta == OPEN_DOOR) || (mKeySta.nextKeySta == CLOSE_DOOR && mDoorSta.msSignDelay >= CLOSE_DELAY_TIME)) {
 			mKeySta.nextKeySta = UNCERTAIN;
+		}
 	}
 	//>>>>>>>>>控制风扇>>>>>>>>>>>>>>>>>>>>
 	if(mKeySta.nowKeySta == OPEN_DOOR) {
@@ -493,7 +574,7 @@ int MainControl(void)
 		StartFan();
 #endif
 	}	
-	else if(mKeySta.nowKeySta == CLOSE_DOOR) {
+	else if(mKeySta.nowKeySta == CLOSE_DOOR && mDoorSta.msSignDelay >= CLOSE_DELAY_TIME) {
 		StopFan();
 	}
 	//<<<<<<<<<<控制风扇<<<<<<<<<<<<<<<<<<<<<<<
@@ -519,11 +600,11 @@ int MainControl(void)
 #endif
 
 
-	uint32_t delay_total_1 = DELAY_6S,delay_total_2 = DELAY_7S;
+	uint32_t delay_total_1 = DELAY_7S,delay_total_2 = DELAY_8S;		//禹成电机需要7秒才能完全关闭
 #if(MOTOR_MODEL == DLK_TG_60W || MOTOR_MODEL == DLK_TG_60W_180DW)          //25°C 电机推出时完全堵转，mMotorAdc[j].CurrentVal 瞬间最大值3275，然后逐渐降低最后一直稳定在2800左右，此时稳压电源读数为：2.6 ~ 2.8A ，在低温-30°C时小裴测试稳压电源读数2.9A
 	if(mNtc10KAdc.CurrentVal > -10) {
-		delay_total_1 = DELAY_6S;
-		delay_total_2 = DELAY_7S;
+		delay_total_1 = DELAY_7S;
+		delay_total_2 = DELAY_8S;
 	}
 	else {
 		delay_total_1 = DELAY_25S;
@@ -571,7 +652,7 @@ int MainControl(void)
 		// 	mMachineModbusSta.inWindows1CurVal = mCount.motorCMD510BRunSta[MOTOR_IN_1_CHN];
 		// }
 		StopExShades();  //临时测试把这条语句删除，实际使用过程中不可删除。  //zbl 20240522
-		if(mDoorRunNumSta <= 2) {	//上电后第一次开/关门命令，不理会电机状态，因为不知道上电时门状态。
+		if(mDoorRunNumSta <= 3) {	//上电后第一次开/关门命令，不理会电机状态，因为不知道上电时门状态。
 			mOutputSta.motorS1 = MACHINE_OK;  //默认OK
 		}
 		else {
@@ -685,7 +766,7 @@ int MainControl(void)
 			}
 		}
 		// if(mDoorRunNumSta >= 0) {
-		// 	mDoorRunNumSta = 2;	//mDoorRunNumSta = 0; // 用于自我循环测试时使用的，赋值0 可以在及时大于5秒后也能一直使用虚拟按键。
+		// 	mDoorRunNumSta = 3;	//mDoorRunNumSta = 0; // 用于自我循环测试时使用的，赋值0 可以在及时大于5秒后也能一直使用虚拟按键。
 		// }
 		mCount.motor = delay_total_2 + 1;
 		mDoorSta.countMidwayOpenDoor = 0;
@@ -759,7 +840,7 @@ int MainControl(void)
 	}
 
 	
-	if(mCount.fan >= DELAY_7S) {	//风机独立开判断是为了风机在一直旋转，不停的检测风机的状态，当第一个5秒来到后，每1秒检测一次状态。
+	if(mCount.fan >= DELAY_8S) {	//风机独立开判断是为了风机在一直旋转，不停的检测风机的状态，当第一个5秒来到后，每1秒检测一次状态。
 		// printf("mAutoVal485 = %d getCtrlStaModbus() = %d mTestVal485 = %d \r\n",mAutoVal485, getCtrlStaModbus(),mTestVal485);
 
         // mCount.fanRunSta = mFanSta.fanFg;  //直流风扇，通过FG信号判断是否在旋转。目前还没实现
@@ -789,10 +870,10 @@ int MainControl(void)
         }
 #endif
 		
-		if(mDoorRunNumSta < 3) {
+		if(mDoorRunNumSta < 4) {
 			mOutputSta.fanS2 = MACHINE_OK;
 		}
-		mCount.fan = DELAY_6S; //当第一个6秒来到后，每1秒检测一次风机状态。
+		mCount.fan = DELAY_7S; //当第一个6秒来到后，每1秒检测一次风机状态。
 
 #if (MACHINE_FEEDBACK_MODE == NORMALLY_CLOSE)  //华为和阳光电源，采用软件强拉常闭触点，更为科学。但是阳光电源实际取消的故障和状态两个干接点信号输出。
 		if(mOutputSta.motorS1 == MACHINE_OK && mOutputSta.fanS2 == MACHINE_OK) {		//这个if语句放在这里降低了代码的可移植性，在移植时特别要注意
@@ -882,7 +963,7 @@ int MainControl(void)
 
 //>>>>>>>>>485 反馈状态>>>>>>>>>>>>> 
         uint32_t fg_cur[MOTOR_BDC_NUMBER_MAX] = {0};        
-        if(mDoorRunNumSta <= 2) {       //第一次默认都是正常的。
+        if(mDoorRunNumSta <= 3) {       //第一次默认都是正常的。
             for(i = 0 ;i < MOTOR_BDC_NUMBER_MAX;i++) {
                 mDoorSta.motorFG[i] = 5000;
                 mDoorSta.motorCurNum[i] = 5000;
@@ -958,7 +1039,7 @@ int MainControl(void)
         if(mKeySta.nowKeySta == CLOSE_DOOR)     //这样写是简化判断逻辑。总之，只有在手动气感信号关闭百叶的时候，485信号才有效。
             mManualFlag = FALSE;
 	}
-	else if(mCount.fan < DELAY_6S) {		//20053 DC风扇，FG 193Hz 193 * 30 (电频率，2级对) = 5790  实测 5730 比较一致
+	else if(mCount.fan < DELAY_7S) {		//20053 DC风扇，FG 193Hz 193 * 30 (电频率，2级对) = 5790  实测 5730 比较一致
 
 	#if(FAN_MODEL == FAN_MODEL_DC_100W)
 		mMachineModbusSta.fan1Current = mFanSta.fanFg * 30;

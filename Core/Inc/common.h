@@ -65,8 +65,9 @@ extern "C" {
 #define NEO_400350_DLK_TG_DW_DCFAN_NC  13       //迪洛克推杆(排风) + 180160DW(进风)+ DC风扇(DC供电，无延时) + NC，通道0是进风(P5)，通道1是排风(P6)
 #define NEO_400350_DW_DCFAN_NC         14       //辰鑫 + DC风扇 +  NC
 #define NEO_400350_DLK_TG_DCFAN_80_NC  15       //迪洛克推杆 + DC风扇 (PWM 80% 固定占空比) + NC
+#define NEO_400350_DLK_TG_DCFAN_MB_HALF     16  //迪洛克推杆 + sinwan_DC风扇 + modbus + 延时0.5小时关闭
 
-#define MACHINE_TYPE_CUSTOMER           NEO_400350_DLK_TG_DCFAN_80_NC
+#define MACHINE_TYPE_CUSTOMER           NEO_400350_DLK_TG_DCFAN_MB_HALF
 
 #define MODBUS_REG_HOLDING_START_1      1
 #define MODBUS_REG_HOLDING_START_21     21
@@ -200,6 +201,21 @@ extern "C" {
 #define FAN_MODEL                           FAN_MODEL_DC_100W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
 #define INLET_MOTOR_FLAG                    VALID
+
+#endif
+
+#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_DCFAN_MB_HALF)
+#define MOTOR_MODEL                         DLK_TG_60W
+#define MODBUS_COMMUNICATION_ADDRESS_TYPE   MODBUS_REG_HOLDING_START_1
+#define MACHINE_FEEDBACK_MODE               NORMALLY_OPEN          //系统反馈的类型
+#define MODBUS_CTRL                         PARAM_ENABLED   //0: no modbus   1: enabled modbus
+#define STOP_FAN_CUR_CHECK                  0   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
+#define FG_CUR_TYPE                         1   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
+#define FAN_MODEL                           FAN_MODEL_DC_100W
+#define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+#define INLET_MOTOR_FLAG                    VALID
+#define XFPS_SIGN                           1   //有 XFPS_SIGN 宏定义说明有消防喷洒信号，无此宏定义说明无消防喷洒信号的功能。
+#define CLOSE_DELAY_TIME                    180000 //有 CLOSE_DELAY_TIME 宏定义说明有延时关闭百叶和风扇的功能。延时时间长度为 CLOSE_DELAY_TIME * 10ms ,最长延时4902年
 
 #endif
 

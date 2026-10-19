@@ -119,6 +119,26 @@ void dwMotorCallback(void)
         mCount.fanRunSta = 0;
 #endif
     }
+    
+	if(mOSTM16_SysTick20us_K >= MAINCONTROL_20US_TO_10MS) {	// 10ms
+		mOSTM16_SysTick20us_K = 0;
+		mCount.fan++;
+		mCount.motor++;
+        mCount.chk++;
+        mCount.keyDownQG++;
+        mCount.keyUpQG++;
+        mDoorSta.msStopDelay++;
+#ifdef CLOSE_DELAY_TIME
+        if(mDoorSta.msSignDelay <= CLOSE_DELAY_TIME) {
+            mDoorSta.msSignDelay++;
+        }
+#endif
+		if (mCount.initBackDoor < 600000) {  //600s
+			mCount.initBackDoor++;
+		}
+		mCount.loopTestCount++;
+	}
+
     dwMotorCtrl(0);
     dwMotorCtrl(1);
     dwMotorCtrl(2);

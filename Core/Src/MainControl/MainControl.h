@@ -62,6 +62,7 @@
 #define DELAY_6S                        600
 #define DELAY_7S                        700
 #define DELAY_8S                        800
+#define DELAY_9S                        900
 #define DELAY_14S                       1400
 #define DELAY_15S                       1500
 #define DELAY_16S                       1600
@@ -157,6 +158,7 @@ typedef struct DOOR_STA
   int32_t doorPositionFinal[MOTOR_BDC_NUMBER_MAX];
   uint32_t doorSensorHSta[MOTOR_BDC_NUMBER_MAX];   //  百叶关闭状态信号
   uint32_t doorSensorLSta[MOTOR_BDC_NUMBER_MAX];   //  百叶开启状态信号
+  uint32_t msSignDelay;          //气感信号断开后延时时间 10ms/p
 
 }stDOOR_STA;
 

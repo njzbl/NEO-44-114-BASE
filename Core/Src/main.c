@@ -98,34 +98,37 @@ int fputc(int ch, FILE *f)
 void PrintfVersion(void)
 {
 #if (MACHINE_TYPE_CUSTOMER == NEO_400350_DW_BASE)  //常开触点机型
-	printf("Software Version: NEO_400350_DW_BASE-20241029\r\n");
+	printf("Software Version: NEO_400350_DW_BASE-20261019\r\n");
 #endif
 #if (MACHINE_TYPE_CUSTOMER == NEO_400350_DW_DCFAN)  //常开触点机型
-	printf("Software Version: NEO_400350_DW_DCFAN-20241029\r\n");
+	printf("Software Version: NEO_400350_DW_DCFAN-20261019\r\n");
 #endif
 #if(MACHINE_TYPE_CUSTOMER == NEO_320270_MAX_BASE)
-    printf("Software Version: NEO_320270_MAX_BASE-V103-20250526-OM\r\n");
+    printf("Software Version: NEO_320270_MAX_BASE-V103-20261019-OM\r\n");
 #endif
 #if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_60W_BASE)
-    printf("Software Version: NEO_400350_DLK_TG_60W_BASE-V103-20250526-OM\r\n");
+    printf("Software Version: NEO_400350_DLK_TG_60W_BASE-V103-20261019-OM\r\n");
 #endif
 #if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_FB_NO_BASE)
-    printf("Software Version: NEO_400350_DLK_FB_NO_BASE-V103-20250526-OM\r\n");
+    printf("Software Version: NEO_400350_DLK_FB_NO_BASE-V103-20261019-OM\r\n");
 #endif
 #if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_FB_NC_HW)//华为
-	printf("Software Version: NEO_400350_DLK_FB_NC_HW-V103-20260209\r\n");
+	printf("Software Version: NEO_400350_DLK_FB_NC_HW-V103-20261019\r\n");
 #endif
 #if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_FB_NO_HY)
-    printf("Software Version: NEO_400350_DLK_FB_NO_HY-V103-20250526-OM\r\n");
+    printf("Software Version: NEO_400350_DLK_FB_NO_HY-V103-20261019-OM\r\n");
 #endif
 #if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_DCFAN_MB)
-    printf("Software Version: NEO_400350_DLK_TG_DCFAN_NO-V103-20260312\r\n");
+    printf("Software Version: NEO_400350_DLK_TG_DCFAN_NO-V103-20261019\r\n");
 #endif
 #if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_DCFAN_NC)
-    printf("Software Version: NEO_400350_DLK_TG_DCFAN_NC-V103-20260312\r\n");
+    printf("Software Version: NEO_400350_DLK_TG_DCFAN_NC-V103-20261019\r\n");
 #endif
 #if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_DW_DCFAN_NC)
-    printf("Software Version: NEO_400350_DLK_TG_DW_DCFAN_NC-V103-20260928\r\n");
+    printf("Software Version: NEO_400350_DLK_TG_DW_DCFAN_NC-V103-20261019\r\n");
+#endif
+#if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_DCFAN_MB_HALF)
+    printf("Software Version: NEO_400350_DLK_TG_DCFAN_MB_HALF-V103-20261019\r\n");
 #endif
 
 }
@@ -234,6 +237,8 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  mCount.initBackDoor = 0;
+  InitNewKeyVar(CLOSE_DOOR);    // 因为按键去抖计时，都是通过定时器完成，所以在进入MainControl()流程之前要清零计数器。
   while (1)
   {
     count++;
