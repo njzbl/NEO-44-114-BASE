@@ -486,11 +486,11 @@ void adcSampling(void)
         // printf("---------mMotorAdc.CurrentVal = %d,%d,%d %d--------------\r\n", mMotorAdc[0].CurrentVal, mMotorAdc[1].CurrentVal, mMotorAdc[2].CurrentVal,mNtc10KAdc.CurrentVal);
         // printf("---------mMotorAdc.CurrentVal = %d,%d,%d --------------\r\n", adcPower[0] / ADC_DIVISION_VAL, adcPower[1] / ADC_DIVISION_VAL, adcPower[2] / ADC_DIVISION_VAL);
 #if (DOOR_CUR_VAL_MODE == CURRENT_MODE)
-        if(mMotorAdc[1].CurrentVal > 10)        //空载时（不接电机），计算出的电流采样值为3mA，接迪洛克电机（电机推杆无负载）电流值：300~550mA。启动瞬间：2000mA。避免个体差异取消10mA一下的杂波值。
+        if(mMotorAdc[1].CurrentVal > 15)        //空载时（不接电机），计算出的电流采样值为3mA，接迪洛克电机（电机推杆无负载）电流值：300~550mA。启动瞬间：2000mA。避免个体差异取消10mA一下的杂波值。
             mMachineModbusSta.outWindowsCurVal = mMotorAdc[1].CurrentVal;
         else
             mMachineModbusSta.outWindowsCurVal = 0;
-        if(mMotorAdc[0].CurrentVal > 10)
+        if(mMotorAdc[0].CurrentVal > 15)
             mMachineModbusSta.inWindows1CurVal = mMotorAdc[0].CurrentVal;
         else
             mMachineModbusSta.inWindows1CurVal = 0;

@@ -261,20 +261,6 @@ void InitNewKeyVar(uint8_t keySta)
 		mCount.motorRunPluseA[i] = 0;
 		mCount.motorRunPluseB[i] = 0;
 	}
-	if(keySta == OPEN_DOOR) {
-
-        mMachineModbusSta.machineWorkMode = RUNNINT_MODE;
-        mMachineModbusSta.fan1Sta = FAN_OPEN_MODE;
-        mMachineModbusSta.outWindowsSta = WINDOWS_OPEN_MODE;
-        mMachineModbusSta.inWindows1Sta = WINDOWS_OPEN_MODE;
-	}
-	else if(keySta == CLOSE_DOOR) {
-        mMachineModbusSta.machineWorkMode = WAITTING_MODE;
-        mMachineModbusSta.fan1Sta = FAN_CLOSE_MODE;                      //上电时默认风扇处于关闭状态；
-        mMachineModbusSta.outWindowsSta = WINDOWS_CLOSE_MODE;
-        mMachineModbusSta.inWindows1Sta = WINDOWS_CLOSE_MODE;
-		mMachineModbusSta.fan1Current = 0;
-	}
     printf("mPtMotorCurrentMax[0:3] = %d,%d,%d _ %d,%d\r\n",mPtMotorCurrentMax[0],mPtMotorCurrentMax[1],mPtMotorCurrentMax[2],mPtMotorCurrentMax[4],mPtMotorCurrentMax[5]);
 	for(int i = 0;i < MOTOR_BDC_NUMBER_MAX;i++) {
 		mCount.motorBDCRunSta[i] = 0;
@@ -407,6 +393,15 @@ int MainControl(void)
 		mCount.loopTestCount = 0;
 #endif
 	if(mDoorRunNumSta < 4) {
+		if(mCount.initBackDoor >= DELAY_2S) {
+			if (mMachineModbusSta.inWindows1CurVal == 0 && mMachineModbusSta.outWindowsCurVal == 0
+				&& mInputSta.startQG == KEY_VAL_OPEN_WIN && mCount.key >= 5) {
+				mCount.initBackDoor = DELAY_9S + 1;
+			}
+			else {
+				mCount.key = 0;
+			}
+		}
 		if(mCount.initBackDoor < DELAY_1S)	{	//前1秒开门，后6秒关门，为了避开关门初期接近开关不可靠接触，采用惯性关门。
 			mInputSta.startQG = GPIO_PIN_RESET;
 		}
@@ -835,8 +830,8 @@ int MainControl(void)
 #endif
 		
 	}
-	else if(mCount.motor >= DELAY_7S) {
-		mCount.motor = DELAY_7S + 1;
+	else if(mCount.motor >= delay_total_2) {
+		mCount.motor = delay_total_2 + 1;
 	}
 
 	
@@ -898,6 +893,10 @@ int MainControl(void)
 
 #if (MACHINE_FEEDBACK_MODE == NORMALLY_OPEN)  //MACHINE_QL_MODE，采用常开触点
 		if(mOutputSta.motorS1 == MACHINE_OK && mOutputSta.fanS2 == MACHINE_OK) {		//这个if语句放在这里降低了代码的可移植性，在移植时特别要注意
+        	if(mKeySta.nowKeySta == OPEN_DOOR)
+				mMachineModbusSta.machineWorkMode = RUNNINT_MODE;
+			else
+				mMachineModbusSta.machineWorkMode = WAITTING_MODE;
 			printf("setSysErr(0);  ");      // 正常时输出开路状态
 			setSysErr(OUT_STATUS_OPEN);
 		}
@@ -1027,7 +1026,7 @@ int MainControl(void)
 		if(mFanSta.fanFg > 200) {	//第一次进入时是刚启动的前5秒累计值。
 			mFanSta.fanFg = 200;		//DC20053风扇每分钟转速6000，所以 6000 / 30 = 200；
 		}
-		mMachineModbusSta.fan1Current = mFanSta.fanFg * 30;  //风扇装束或者电流，这里先实现的是转速。
+		mMachineModbusSta.fan1Current = mFanSta.fanFg;		//三达
 	#endif
 //<<<<<<<<485 反馈状态<<<<<<<<<<<<<<
 
@@ -1042,7 +1041,10 @@ int MainControl(void)
 	else if(mCount.fan < DELAY_7S) {		//20053 DC风扇，FG 193Hz 193 * 30 (电频率，2级对) = 5790  实测 5730 比较一致
 
 	#if(FAN_MODEL == FAN_MODEL_DC_100W)
-		mMachineModbusSta.fan1Current = mFanSta.fanFg * 30;
+		mMachineModbusSta.fan1Current = mFanSta.fanFg;	
+		//只记录FG数，对应转速： 
+		//DELTA 的 20053 型号：THB2024HSP8 EX  ，FG * 30 = 6000 (最大6000)；
+		//SINWAN 的 25489 规格书型号：SD25489AP-24SHHWB (Ex)(MS)  铭牌型号：SD25489AP-24SHHWB (Ex68FP) ，FG * 20 = 3000（最大3000，实际2900）；
 
 	#endif
 	}
@@ -1094,6 +1096,10 @@ void OpenExShades(void)
 		mMachineSta.motorPowerSta[MOTOR2_LOGIC_CHN] = MOTOR_POWER_UP_STA;
 		mMachineSta.hBridgeSta = H_BRIDGE_STATE_OPEN_H;
 	}
+	mMachineModbusSta.machineWorkMode = RUNNINT_MODE;
+	mMachineModbusSta.fan1Sta = FAN_OPEN_MODE;
+	mMachineModbusSta.outWindowsSta = WINDOWS_OPEN_MODE;
+	mMachineModbusSta.inWindows1Sta = WINDOWS_OPEN_MODE;
 }
 
 void CloseExShades(void)
@@ -1140,6 +1146,11 @@ void CloseExShades(void)
 		mMachineSta.motorPowerSta[MOTOR2_LOGIC_CHN] = MOTOR_POWER_UP_STA;
 		mMachineSta.hBridgeSta = H_BRIDGE_STATE_OPEN_H;
 	}
+	mMachineModbusSta.machineWorkMode = WAITTING_MODE;
+	mMachineModbusSta.fan1Sta = FAN_CLOSE_MODE;
+	mMachineModbusSta.outWindowsSta = WINDOWS_CLOSE_MODE;
+	mMachineModbusSta.inWindows1Sta = WINDOWS_CLOSE_MODE;
+	mMachineModbusSta.fan1Current = 0;
 }
 
 void StopExShades(void)

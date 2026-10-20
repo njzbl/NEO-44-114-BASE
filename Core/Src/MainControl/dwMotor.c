@@ -127,6 +127,7 @@ void dwMotorCallback(void)
         mCount.chk++;
         mCount.keyDownQG++;
         mCount.keyUpQG++;
+        mCount.key++;
         mDoorSta.msStopDelay++;
 #ifdef CLOSE_DELAY_TIME
         if(mDoorSta.msSignDelay <= CLOSE_DELAY_TIME) {
