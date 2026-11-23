@@ -66,8 +66,10 @@ extern "C" {
 #define NEO_400350_DW_DCFAN_NC         14       //辰鑫 + DC风扇 +  NC
 #define NEO_400350_DLK_TG_DCFAN_80_NC  15       //迪洛克推杆 + DC风扇 (PWM 80% 固定占空比) + NC
 #define NEO_400350_DLK_TG_DCFAN_MB_HALF     16  //迪洛克推杆 + sinwan_DC风扇 + modbus + 延时0.5小时关闭
+#define NEO_400350_DLK_TG_ACFAN_MB     17       //迪洛克推杆 + AC风扇 + NO + modbus
+#define NEO_400350_DLK_TG_ACFAN_NC     18       //迪洛克推杆 + AC风扇 + NC
 
-#define MACHINE_TYPE_CUSTOMER           NEO_400350_DLK_TG_DCFAN_MB_HALF
+#define MACHINE_TYPE_CUSTOMER           NEO_400350_DLK_TG_ACFAN_NC
 
 #define MODBUS_REG_HOLDING_START_1      1
 #define MODBUS_REG_HOLDING_START_21     21
@@ -84,6 +86,7 @@ extern "C" {
 #define FAN_MODEL                           FAN_MODEL_AC_75W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
 #define INLET_MOTOR_FLAG                    VALID
+#define CLOSE_DELAY_TIME                    1               //1：10ms 延时,等于没有延时功能
 
 #endif
 
@@ -97,6 +100,7 @@ extern "C" {
 #define FAN_MODEL                           FAN_MODEL_DC_100W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
 #define INLET_MOTOR_FLAG                    VALID
+#define CLOSE_DELAY_TIME                    1               //1：10ms 延时,等于没有延时功能
 
 #endif
 
@@ -110,6 +114,7 @@ extern "C" {
 #define FAN_MODEL                           FAN_MODEL_DC_100W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
 #define INLET_MOTOR_FLAG                    VALID
+#define CLOSE_DELAY_TIME                    1               //1：10ms 延时,等于没有延时功能
 
 #endif
 
@@ -123,6 +128,7 @@ extern "C" {
 #define FAN_MODEL                           FAN_MODEL_DC_100W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
 #define INLET_MOTOR_FLAG                    VALID
+#define CLOSE_DELAY_TIME                    1               //1：10ms 延时,等于没有延时功能
 
 #endif
 
@@ -136,6 +142,7 @@ extern "C" {
 #define FAN_MODEL                           FAN_MODEL_AC_75W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
 #define INLET_MOTOR_FLAG                    VALID
+#define CLOSE_DELAY_TIME                    1               //1：10ms 延时,等于没有延时功能
 
 #endif
 
@@ -149,6 +156,7 @@ extern "C" {
 #define FAN_MODEL                           FAN_MODEL_AC_75W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
 #define INLET_MOTOR_FLAG                    VALID
+#define CLOSE_DELAY_TIME                    1               //1：10ms 延时,等于没有延时功能
 
 #endif
 
@@ -162,6 +170,7 @@ extern "C" {
 #define FAN_MODEL                           FAN_MODEL_AC_75W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
 #define INLET_MOTOR_FLAG                    VALID
+#define CLOSE_DELAY_TIME                    1               //1：10ms 延时,等于没有延时功能
 
 #endif
 
@@ -175,6 +184,7 @@ extern "C" {
 #define FAN_MODEL                           FAN_MODEL_AC_75W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //卡异物检测功能
 #define INLET_MOTOR_FLAG                    VALID
+#define CLOSE_DELAY_TIME                    1               //1：10ms 延时,等于没有延时功能
 
 #endif
 
@@ -188,6 +198,7 @@ extern "C" {
 #define FAN_MODEL                           FAN_MODEL_AC_75W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
 #define INLET_MOTOR_FLAG                    VALID
+#define CLOSE_DELAY_TIME                    1               //1：10ms 延时,等于没有延时功能
 
 #endif
 
@@ -201,6 +212,7 @@ extern "C" {
 #define FAN_MODEL                           FAN_MODEL_DC_100W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
 #define INLET_MOTOR_FLAG                    VALID
+#define CLOSE_DELAY_TIME                    1               //1：10ms 延时,等于没有延时功能
 
 #endif
 
@@ -229,6 +241,7 @@ extern "C" {
 #define FAN_MODEL                           FAN_MODEL_DC_100W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
 #define INLET_MOTOR_FLAG                    VALID
+#define CLOSE_DELAY_TIME                    1               //1：10ms 延时,等于没有延时功能
 
 #endif
 
@@ -242,6 +255,7 @@ extern "C" {
 #define FAN_MODEL                           FAN_MODEL_DC_100W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
 #define INLET_MOTOR_FLAG                    VALID
+#define CLOSE_DELAY_TIME                    1               //1：10ms 延时,等于没有延时功能
 #define PWM_DCFAN_VALUE                     80        //直流风扇的PWM占空比
 
 #endif
@@ -256,6 +270,7 @@ extern "C" {
 #define FAN_MODEL                           FAN_MODEL_DC_100W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //卡异物检测功能
 #define INLET_MOTOR_FLAG                    VALID
+#define CLOSE_DELAY_TIME                    1               //1：10ms 延时,等于没有延时功能
 
 #endif
 
@@ -269,6 +284,7 @@ extern "C" {
 #define FAN_MODEL                           FAN_MODEL_DC_100W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //卡异物检测功能
 #define INLET_MOTOR_FLAG                    VALID
+#define CLOSE_DELAY_TIME                    1               //1：10ms 延时,等于没有延时功能
 
 #endif
 
@@ -282,6 +298,7 @@ extern "C" {
 #define FAN_MODEL                           FAN_MODEL_DC_100W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
 #define INLET_MOTOR_FLAG                    INVALID
+#define CLOSE_DELAY_TIME                    1               //1：10ms 延时,等于没有延时功能
 
 #endif
 
@@ -295,9 +312,37 @@ extern "C" {
 #define FAN_MODEL                           FAN_MODEL_DC_100W
 #define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
 #define INLET_MOTOR_FLAG                    VALID
+#define CLOSE_DELAY_TIME                    1               //1：10ms 延时,等于没有延时功能
 
 #endif
 
+#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_ACFAN_MB)
+#define MOTOR_MODEL                         DLK_TG_60W
+#define MODBUS_COMMUNICATION_ADDRESS_TYPE   MODBUS_REG_HOLDING_START_1
+#define MACHINE_FEEDBACK_MODE               NORMALLY_OPEN          //系统反馈的类型
+#define MODBUS_CTRL                         PARAM_ENABLED   //0: no modbus   1: enabled modbus
+#define STOP_FAN_CUR_CHECK                  0   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
+#define FG_CUR_TYPE                         1   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
+#define FAN_MODEL                           FAN_MODEL_AC_75W
+#define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+#define INLET_MOTOR_FLAG                    VALID
+#define CLOSE_DELAY_TIME                    1               //1：10ms 延时,等于没有延时功能
+
+#endif
+
+#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_ACFAN_NC)
+#define MOTOR_MODEL                         DLK_TG_60W
+#define MODBUS_COMMUNICATION_ADDRESS_TYPE   MODBUS_REG_HOLDING_START_1
+#define MACHINE_FEEDBACK_MODE               NORMALLY_CLOSE          //系统反馈的类型
+#define MODBUS_CTRL                         PARAM_DISABLED   //0: no modbus   1: enabled modbus
+#define STOP_FAN_CUR_CHECK                  0   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
+#define FG_CUR_TYPE                         1   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
+#define FAN_MODEL                           FAN_MODEL_AC_75W
+#define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+#define INLET_MOTOR_FLAG                    VALID
+#define CLOSE_DELAY_TIME                    1               //1：10ms 延时,等于没有延时功能
+
+#endif
 
 
 #if (MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_YLSZ23_FB)

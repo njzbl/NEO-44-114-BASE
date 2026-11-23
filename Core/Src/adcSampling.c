@@ -348,13 +348,13 @@ void adcSampling(void)
 
 #if(MOTOR_MODEL == DLK_TG_60W || MOTOR_MODEL == DLK_TG_60W_180DW)          //25°C 电机推出时完全堵转，mMotorAdc[j].CurrentVal 瞬间最大值3275，然后逐渐降低最后一直稳定在2800左右，此时稳压电源读数为：2.6 ~ 2.8A ，在低温-30°C时小裴测试稳压电源读数2.9A。 -40°C时 串口监测到mMotorAdc[j].CurrentVal 长时间达到：4000+
             if(mNtc10KAdc.CurrentVal > -10) {
-                maxCurThreshold[j] = 2000; //maxCurThreshold[j] = 2800;  //迪洛克常规款电机堵转时电流为2400 ~ 2850 左右，考虑个体差异性，取偏小值 2.4A ，持续500ms
+                maxCurThreshold[j] = 1200; //maxCurThreshold[j] = 2800;  //迪洛克常规款电机堵转时电流为2400 ~ 2850 左右，考虑个体差异性，取偏小值 2.4A ，持续500ms
             }
             else {
                 maxCurThreshold[j] = 7500;
             }
             motorRunAngle[j] = mDoorSta.motorCurNum[j];
-            motorMaxCurHoldTimeMsThreshold = 600;           //600ms（对应3.4A电流）的延时可以达到电机的最大扭矩，500ms（对应3.0A电流）无法达到。
+            motorMaxCurHoldTimeMsThreshold = 100;           //600ms（对应3.4A电流）的延时可以达到电机的最大扭矩，500ms（对应3.0A电流）无法达到。
 #endif
 #if(MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_YLSZ23_FB)
             maxCurThreshold[j] = 2000;                      //待机电流0.04mA  空载 500 ~ 600mA   
