@@ -39,6 +39,7 @@ extern "C" {
 
 #define NORMALLY_OPEN                   0   //NO
 #define NORMALLY_CLOSE                  1   //NC
+#define FLT_NC_STA_NO                   2   //FLT_NC_STA_NO
 
 #define DLK_TG_60W                      0       //迪洛克推杆电机，内部没有堵转电流保护
 #define CHENXIN_5840_3650               1       //辰鑫蜗涡轮杆电机 400350DW
@@ -48,6 +49,9 @@ extern "C" {
 #define WG_TG                           5       //微光推杆电机，内部没有堵转电流保护
 #define G_ROCH_D3Ex                     6       //基洛克防爆推杆电机 ，内部有堵转电流保护
 #define DLK_TG_60W_180DW                7       //迪洛克推杆电机，内部没有堵转电流保护（排风） + 180160DW进风，通道0是进风(P5)，通道1是排风(P6)
+#define DLK_TG_60W_7A                   8       //迪洛克推杆电机，内部没有堵转电流保护 启动电流7A，（ DLK_TG_60W  启动电流 2.4A ） NEO_400350_DLK_TG_FGFAN 和 NEO_400350_DLK_TG_DCFAN_NCNO 初期用DLK_TG_60W_7A电机，后续改为DLK_TG_60W电机。
+
+
 
 #define NEO_400350_DW_BASE              0
 #define NEO_320270_MAX_BASE             1       //迪洛克推杆 + DC风扇 + NO
@@ -68,8 +72,10 @@ extern "C" {
 #define NEO_400350_DLK_TG_DCFAN_MB_HALF     16  //迪洛克推杆 + sinwan_DC风扇 + modbus + 延时0.5小时关闭
 #define NEO_400350_DLK_TG_ACFAN_MB     17       //迪洛克推杆 + AC风扇 + NO + modbus
 #define NEO_400350_DLK_TG_ACFAN_NC     18       //迪洛克推杆 + AC风扇 + NC
+#define NEO_400350_DLK_TG_FGFAN        19       //迪洛克推杆 + FG风扇 + 蓄电模块 + NO（只识别风扇FG）, 禁止使能 MACHINE_POWER_LOSS_DETECT ,GE01项目
+#define NEO_400350_DLK_TG_DCFAN_NCNO   20       //迪洛克推杆 + DC风扇 + FLT_NC_STA_NO + 使能 MACHINE_POWER_LOSS_DETECT , 比亚迪项目
 
-#define MACHINE_TYPE_CUSTOMER           NEO_400350_DLK_TG_ACFAN_NC
+#define MACHINE_TYPE_CUSTOMER           NEO_400350_DLK_TG_FGFAN
 
 #define MODBUS_REG_HOLDING_START_1      1
 #define MODBUS_REG_HOLDING_START_21     21
@@ -344,6 +350,33 @@ extern "C" {
 
 #endif
 
+#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_FGFAN)
+#define MOTOR_MODEL                         DLK_TG_60W
+#define MODBUS_COMMUNICATION_ADDRESS_TYPE   MODBUS_REG_HOLDING_START_1
+#define MACHINE_FEEDBACK_MODE               NORMALLY_OPEN          //系统反馈的类型
+#define MODBUS_CTRL                         PARAM_DISABLED   //0: no modbus   1: enabled modbus
+#define STOP_FAN_CUR_CHECK                  0   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
+#define FG_CUR_TYPE                         1   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
+#define FAN_MODEL                           FAN_MODEL_DC_100W
+#define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+#define INLET_MOTOR_FLAG                    VALID
+#define CLOSE_DELAY_TIME                    1               //1：10ms 延时,等于没有延时功能
+
+#endif
+
+#if (MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_DCFAN_NCNO)
+#define MOTOR_MODEL                         DLK_TG_60W
+#define MODBUS_COMMUNICATION_ADDRESS_TYPE   MODBUS_REG_HOLDING_START_1
+#define MACHINE_FEEDBACK_MODE               FLT_NC_STA_NO          //系统反馈的类型
+#define MODBUS_CTRL                         PARAM_DISABLED   //0: no modbus   1: enabled modbus
+#define STOP_FAN_CUR_CHECK                  0   //0: 关闭风机时不检测电流值  1：关闭风机时依然检测电流
+#define FG_CUR_TYPE                         1   //0:电机用FG信号判定电机工作转态；  1:电机用电流信号判定电机工作转态；
+#define FAN_MODEL                           FAN_MODEL_DC_100W
+#define MACHINE_DETECT_FOREIGN              DETECT_FOREIGN_DISABLED                 //无卡异物检测功能
+#define INLET_MOTOR_FLAG                    VALID
+#define CLOSE_DELAY_TIME                    1               //1：10ms 延时,等于没有延时功能
+
+#endif
 
 #if (MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_YLSZ23_FB)
 #define MAX_CURRENT_MOTOR               2625        //5A     这里的阈值8000为暂定值，需要测试

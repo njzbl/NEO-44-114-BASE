@@ -56,6 +56,8 @@ extern uint16_t mMotorCurNow[1000];
 uint16_t mMotorCurCount = 0;
 uint16_t mMotorCurCountFlag = 0;
 
+uint32_t mPowerAdcCount = 0, mPowerAdcMin = 0xffffffff, mPowerAdcMax = 0;
+
 #ifdef PWM_DCFAN_VALUE
 uint16_t mPwm = 100,mPwmPre;
 #endif
@@ -367,7 +369,9 @@ int MainControl(void)
 	}
 
     UpdataModbusAddr();
+#if(MACHINE_TYPE_CUSTOMER != NEO_400350_DLK_TG_FGFAN)
 	mInputSta.startQG = getChkSta();
+#endif
 
 #ifdef XFPS_SIGN
 	setPWM2(1);							//开启消防喷洒功能时，需要占用PWM2口，所以DW电机不能具备此功能。后续通过修改PCB实现不占用PWM2口。
@@ -409,7 +413,32 @@ int MainControl(void)
 			mInputSta.startQG = GPIO_PIN_SET;
 		}
 	}
+#if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_FGFAN)
 
+	if(mPowerAdcB.CurrentVal < mPowerAdcB.ThresholdMin) {      //上电9秒以后  ,断电自动关闭百叶。
+        mInputSta.startQG = GPIO_PIN_SET;
+    }
+	if(mPowerAdcB.CurrentVal >= (mPowerAdcB.ThresholdMin + 5)){ 	//开百叶
+		mInputSta.startQG = GPIO_PIN_RESET;
+	}
+	
+    if(mCount.agingCheck > 100) {
+		mCount.agingCheck = 0;
+		mPowerAdcCount++;
+		if(mPowerAdcB.CurrentVal > mPowerAdcMax)
+			mPowerAdcMax = mPowerAdcB.CurrentVal;
+		if(mPowerAdcB.CurrentVal < mPowerAdcMin)
+			mPowerAdcMin = mPowerAdcB.CurrentVal;
+		if(mPowerAdcCount >= 30) {
+			if(((mPowerAdcMin + 6) >= mPowerAdcMax) && (mPowerAdcMin <= 1100) && (mPowerAdcMin >= 880)) {
+				mPowerAdcB.ThresholdMin = mPowerAdcMin - 30;
+			}
+			mPowerAdcCount = 0;
+			mPowerAdcMin = 0xffffffff;
+			mPowerAdcMax = 0;
+		}
+	}
+#endif
 //>>>>>>>>>>>>>>>>  气感信号按键单独去抖计算，为了实现阳光电源变态的控制逻辑 >>>>>>>>>>>>>>>>>>>>
 	delayKey = DELAY_150MS;
     if(mInputSta.startQG == GPIO_PIN_RESET) {   //闭合状态，为了开百叶 ，
@@ -559,9 +588,9 @@ int MainControl(void)
 	//>>>>>>>>>控制风扇>>>>>>>>>>>>>>>>>>>>
 	if(mKeySta.nowKeySta == OPEN_DOOR) {
 #if(FAN_MODEL == FAN_MODEL_DC_100W)
-		// if (mCount.fan >= DELAY_2S) {	//直流风扇功率较大，为了和电机分时启动降低供电电源最大功率的需求			
+		if (mCount.fan >= DELAY_1S) {	//直流风扇功率较大，为了和电机分时启动降低供电电源最大功率的需求			
 			StartFan();
-		// }
+		}
 		// else {		//zbl change fan FG Hz , 20260604
 		// 	mCount.fanRunSta = FAN_EFFICACY_NUM_MAX - 15; //直流风扇延时启动，有可能在随后的4秒内转速不够而造成误判。同时可以避免风扇未接时的无法检出。
 		// }	
@@ -869,6 +898,40 @@ int MainControl(void)
 			mOutputSta.fanS2 = MACHINE_OK;
 		}
 		mCount.fan = DELAY_7S; //当第一个6秒来到后，每1秒检测一次风机状态。
+
+#if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_FGFAN) 	//不需要监测电机工作状态
+    mOutputSta.motorS1 = MACHINE_OK;
+#endif
+
+#if (MACHINE_FEEDBACK_MODE == FLT_NC_STA_NO)  //比亚迪，故障反馈是常闭，状态反馈是常开
+
+#if (MACHINE_POWER_LOSS_DETECT == PROTECTION_ENABLED)
+		if(mPowerAdcB.CurrentVal < mPowerAdcB.ThresholdMin) {      //系统掉电了
+			setSysErr(OUT_STATUS_OPEN);   //系统掉电了,立刻断电
+		}
+		else {
+			if(mOutputSta.motorS1 == MACHINE_OK && mOutputSta.fanS2 == MACHINE_OK) {		//这个if语句放在这里降低了代码的可移植性，在移植时特别要注意
+				printf("mDoorSta.doorSensorLHSta[0:1] = %d_%d : %d_%d  setSysErr(1);  ",mDoorSta.doorSensorLSta[0],mDoorSta.doorSensorHSta[0],mDoorSta.doorSensorLSta[1],mDoorSta.doorSensorHSta[1]);      // 华为要求，正常时输出闭合状态
+				setSysErr(OUT_STATUS_CLOSE);
+			}
+			else {
+				mMachineModbusSta.machineWorkMode = FAILURE_MODE;
+				printf("mDoorSta.doorSensorLHSta[0:1] = %d_%d : %d_%d setSysErr(0);  ",mDoorSta.doorSensorLSta[0],mDoorSta.doorSensorHSta[0],mDoorSta.doorSensorLSta[1],mDoorSta.doorSensorHSta[1]);      // 华为要求，异常时输出断开状态
+				setSysErr(OUT_STATUS_OPEN);
+			}
+		}
+		if(mKeySta.nowKeySta == OPEN_DOOR) {
+			// printf("setSysSta(1); %d_%d  FAN_%d,%d,%d\r\n",mOutputSta.motorS1,mOutputSta.fanS2,mFanAdc.CurrentVal,mFanAdc.ThresholdMin,mFanAdc.ThresholdMax);
+			printf("setSysSta(1);fan current:%d mA %d\r\n",mMachineModbusSta.fan1Current,mFanAdc.CurrentVal);
+			setSysSta(OUT_STATUS_CLOSE);
+		}
+		else {
+			printf("setSysSta(0);fan current:%d mA %d\r\n",mMachineModbusSta.fan1Current,mFanAdc.CurrentVal);
+			setSysSta(OUT_STATUS_OPEN);
+		}
+#endif
+
+#endif
 
 #if (MACHINE_FEEDBACK_MODE == NORMALLY_CLOSE)  //华为和阳光电源，采用软件强拉常闭触点，更为科学。但是阳光电源实际取消的故障和状态两个干接点信号输出。
 		if(mOutputSta.motorS1 == MACHINE_OK && mOutputSta.fanS2 == MACHINE_OK) {		//这个if语句放在这里降低了代码的可移植性，在移植时特别要注意

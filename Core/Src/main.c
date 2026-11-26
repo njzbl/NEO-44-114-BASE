@@ -136,6 +136,9 @@ void PrintfVersion(void)
 #if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_ACFAN_NC)
     printf("Software Version: NEO_400350_DLK_TG_ACFAN_NC-V103-20261110\r\n");
 #endif
+#if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_FGFAN)
+    printf("Software Version: NEO_400350_DLK_TG_FGFAN-V103-20261125\r\n");
+#endif
 
 }
 
@@ -208,6 +211,10 @@ int main(void)
 #endif
 #if (MACHINE_FEEDBACK_MODE == NORMALLY_OPEN)  //常开触点机型
   setSysErr(OUT_STATUS_OPEN);
+  setSysSta(OUT_STATUS_OPEN);
+#endif
+#if (MACHINE_FEEDBACK_MODE == FLT_NC_STA_NO)  //比亚迪项目
+  setSysErr(OUT_STATUS_CLOSE);
   setSysSta(OUT_STATUS_OPEN);
 #endif
   InitModbus();

@@ -139,14 +139,13 @@ void ClsArray(uint8_t* buf, uint32_t size)
 
 void InitSampling(void)
 {
-    for(uint32_t i = 0; i < ADC_DIVISION_VAL; i++) {
-        ClsArray((uint8_t*)& mFanAdc, sizeof(mFanAdc));
-        ClsArray((uint8_t*)& mMotorAdc, sizeof(mMotorAdc));
-        ClsArray((uint8_t*)& mPowerAdcB, sizeof(mPowerAdcB));
-        ClsArray((uint8_t*)& mTemplateAdc, sizeof(mTemplateAdc));
-        ClsArray((uint8_t*)& mVrefValAdc, sizeof(mVrefValAdc));
-        ClsArray((uint8_t*)& mNtc10KAdc, sizeof(mNtc10KAdc));
-    }
+    ClsArray((uint8_t*)& mFanAdc, sizeof(mFanAdc));
+    ClsArray((uint8_t*)& mMotorAdc, sizeof(mMotorAdc));
+    ClsArray((uint8_t*)& mPowerAdcB, sizeof(mPowerAdcB));
+    ClsArray((uint8_t*)& mTemplateAdc, sizeof(mTemplateAdc));
+    ClsArray((uint8_t*)& mVrefValAdc, sizeof(mVrefValAdc));
+    ClsArray((uint8_t*)& mNtc10KAdc, sizeof(mNtc10KAdc));
+
 }
 /*****************************************************************************************************************************
  * adcSampling
@@ -348,13 +347,21 @@ void adcSampling(void)
 
 #if(MOTOR_MODEL == DLK_TG_60W || MOTOR_MODEL == DLK_TG_60W_180DW)          //25°C 电机推出时完全堵转，mMotorAdc[j].CurrentVal 瞬间最大值3275，然后逐渐降低最后一直稳定在2800左右，此时稳压电源读数为：2.6 ~ 2.8A ，在低温-30°C时小裴测试稳压电源读数2.9A。 -40°C时 串口监测到mMotorAdc[j].CurrentVal 长时间达到：4000+
             if(mNtc10KAdc.CurrentVal > -10) {
-                maxCurThreshold[j] = 1200; //maxCurThreshold[j] = 2800;  //迪洛克常规款电机堵转时电流为2400 ~ 2850 左右，考虑个体差异性，取偏小值 2.4A ，持续500ms
+#if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_FGFAN || MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_DCFAN_NCNO) 
+                maxCurThreshold[j] = 4000;
+#else
+                maxCurThreshold[j] = 1200;  //maxCurThreshold[j] = 2800;  //迪洛克常规款电机堵转时电流为2400 ~ 2850 左右，考虑个体差异性，取偏小值 2.4A ，持续500ms
+#endif
             }
             else {
                 maxCurThreshold[j] = 7500;
             }
             motorRunAngle[j] = mDoorSta.motorCurNum[j];
-            motorMaxCurHoldTimeMsThreshold = 100;           //600ms（对应3.4A电流）的延时可以达到电机的最大扭矩，500ms（对应3.0A电流）无法达到。
+#if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_FGFAN || MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_DCFAN_NCNO) 
+            motorMaxCurHoldTimeMsThreshold = 600;
+#else
+            motorMaxCurHoldTimeMsThreshold = 100;           //600ms（对应3.4A电流）的延时可以达到电机的最大扭矩，500ms（对应3.0A电流）无法达到。 
+#endif
 #endif
 #if(MOTOR_MODEL == DLK_YLSZ23 || MOTOR_MODEL == DLK_YLSZ23_FB)
             maxCurThreshold[j] = 2000;                      //待机电流0.04mA  空载 500 ~ 600mA   
@@ -499,14 +506,15 @@ void adcSampling(void)
         mMotorAdc[0].SamplingFalg = 0;   //清除采集完成标识
         mMotorAdc[0].CurFlag = 1;
     }
-#if (MACHINE_POWER_LOSS_DETECT == PROTECTION_ENABLED)
+#if (MACHINE_POWER_LOSS_DETECT == PROTECTION_ENABLED || MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_FGFAN)
     if(mPowerAdcB.SamplingFalg == 1) {
         int32_t tempSum = 0;
         for(int i = 0;i <ADC_DIVISION_VAL;i++) {
             curVal[i] = mPowerAdcB.DivVal[i] * 3300 >> 12;
             tempSum += curVal[i];
         }
-        mPowerAdcB.ThresholdMin = 1100;     //1800mV 对应 R1 = 20K ; 1100mV 对应 R1 = 47K (DC24V 正常供电时 1220mV ； DC20V 供电时 1060mV ； DC18V 供电时 980mV )
+        if(mPowerAdcB.ThresholdMin > 1100 || mPowerAdcB.ThresholdMin < 880)
+            mPowerAdcB.ThresholdMin = 880;     //1800mV 对应 R1 = 20K ; 1100mV 对应 R1 = 47K (DC24V 正常供电时 1220mV ； DC20V 供电时 1060mV ； DC18V 供电时 980mV )
         mPowerAdcB.CurrentVal = (tempSum / ADC_DIVISION_VAL);
         // mMachineModbusSta.Ntctemperature = mNtc10KAdc.CurrentVal + 273;
         // printf("mPowerAdcB.CurrentVal = %d\r\n", mPowerAdcB.CurrentVal);
@@ -564,7 +572,12 @@ void adcCallback(void)
 
     if(mMotorAdc[0].DivVal[mMotorAdc[0].DivNum] >= MAX_CURRENT_MOTOR) {  //5A  ，实测效果很好，MOS管不会坏 ， 2025-07-16
         mPtMotorCurrentCount[0]++;
+#if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_FGFAN || MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_DCFAN_NCNO) 	//电机上电电流很大约20ms电流峰值，最大8A
+        if(mPtMotorCurrentCount[0] > 5000) {    //5000 * 20 us = 100ms
+
+#else
         if(mPtMotorCurrentCount[0] > 30) {              //参数为5时，短路时峰值电流为16A，持续时间约100us, 取值10的原因：辰鑫400350DW电机，启动瞬间会有4个周期电流值超过2625，
+#endif
             mMachineSta.motorPowerSta[MOTOR1_LOGIC_CHN] = MOTOR_POWER_DOWN_STA;
             HAL_GPIO_WritePin(MOTOR_PWR_CTRL1_GPIO_Port, MOTOR_PWR_CTRL1_Pin, GPIO_PIN_RESET);
             mPtMotorCurrentMax[4]++;
@@ -590,7 +603,12 @@ void adcCallback(void)
     }
     if(mMotorAdc[1].DivVal[mMotorAdc[0].DivNum] >= MAX_CURRENT_MOTOR) {
         mPtMotorCurrentCount[1]++;
+#if(MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_FGFAN || MACHINE_TYPE_CUSTOMER == NEO_400350_DLK_TG_DCFAN_NCNO) 	//电机上电电流很大约20ms电流峰值，最大8A
+        if(mPtMotorCurrentCount[1] > 5000) {    //5000 * 20 us = 100ms
+
+#else
         if(mPtMotorCurrentCount[1] > 30) {       //30: 30 * 20 us = 600 us ,MOS动作时间约150us ，短路时峰值电流为24A，20260819 , 合计时间约800us
+#endif
 		    mMachineSta.motorPowerSta[MOTOR2_LOGIC_CHN] = MOTOR_POWER_DOWN_STA;
             HAL_GPIO_WritePin(MOTOR_PWR_CTRL2_GPIO_Port, MOTOR_PWR_CTRL2_Pin, GPIO_PIN_RESET);
             mPtMotorCurrentMax[5]++;
